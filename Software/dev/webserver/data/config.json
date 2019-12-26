@@ -1,0 +1,16 @@
+{
+    "ssid":"XXXXX",
+    "pass":"YYYYYYY",
+    "ip":[192,168,1,252],
+    "netmask":[255,255,255,0],
+    "gateway":[192,168,1,1],
+    "dns":[8,8,8,8],
+    "dhcp":false,
+    "ntp":"es.pool.ntp.org",
+    "NTPperiod":15,
+    "timeZone":10,
+    "daylight":true,
+    "deviceName":"Alarm",
+    "passwd":"1234",
+    "arm_delay":10
+}
