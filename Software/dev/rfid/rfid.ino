@@ -30,12 +30,7 @@ const int RST_PIN = 22; //9;            // Pin 9 para el reset del RC522
 const int SS_PIN = 21;            // Pin 10 para el SS (SDA) del RC522
 MFRC522 mfrc522(SS_PIN, RST_PIN);   // Crear instancia del MFRC522
  
-void printArray(byte *buffer, byte bufferSize) {
-   for (byte i = 0; i < bufferSize; i++) {
-      Serial.print(buffer[i] < 0x10 ? " 0" : " ");
-      Serial.print(buffer[i], HEX);
-   }
-}
+
  
 void setup()
 {

@@ -35,6 +35,8 @@
 #define LLOW     LOW
 #else
 
+// RESERVED
+// 19 -> ring alamr
 #define Z1_PIN   21
 #define Z2_PIN   22
 #define Z3_PIN   23
