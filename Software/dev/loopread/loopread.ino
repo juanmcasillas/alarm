@@ -75,8 +75,7 @@ void loop() {
   // HIGH when it's open, and LOW when it's pressed. Turn on pin 13 when the
   // button's pressed, and off when it's not:
 
-  if (z1 || z2 || z3 == HIGH) {
-    
+  if (z1 || z2 || z3 == HIGH) { 
     digitalWrite(LED_PIN, LHIGH);
   } else {
     digitalWrite(LED_PIN, LLOW);
