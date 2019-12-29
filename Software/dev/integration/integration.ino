@@ -62,13 +62,31 @@
 
 MFRC522 mfrc522(SDA_PIN, RST_PIN);   
 
-byte validKey1[4] = { 0xA0, 0xB1, 0xC2, 0xD3 };  // Example of valid key
+#define VALID_KEYS_LEN  2
+#define VALID_KEY_SIZE  4
+byte valid_keys[VALID_KEYS_LEN][VALID_KEY_SIZE] = {
+  { 0xF7, 0x76, 0xDB, 0xAB },
+  { 0xD5, 0x57, 0x6F, 0x7B }
+};
 
 bool isEqualArray(byte* arrayA, byte* arrayB, int length) {
   for (int index = 0; index < length; index++) {
     if (arrayA[index] != arrayB[index]) return false;
   }
   return true;
+}
+
+bool isValidKey(byte* arrayA) {
+   
+  for (int i=0; i< VALID_KEYS_LEN; i++) {
+    byte *ptr = valid_keys[i];
+    if (isEqualArray(arrayA, ptr, VALID_KEY_SIZE)) {
+      return(true);
+    }
+  }
+
+return(false);
+
 }
 
 void printArray(byte *buffer, byte bufferSize) {
@@ -108,7 +126,8 @@ void loop() {
   if (mfrc522.PICC_IsNewCardPresent()) {
       if (mfrc522.PICC_ReadCardSerial()) {
 
-        if (isEqualArray(mfrc522.uid.uidByte, validKey1, 4)) {
+        if (isValidKey(mfrc522.uid.uidByte)) {
+        //if (isEqualArray(mfrc522.uid.uidByte, validKey1, 4)) {
             Serial.println("Valid Key");
         }
         else {
