@@ -1,5 +1,6 @@
 /* integration demo
  
+ Added test
  Try to integrate all the modules, in one script
 
     * Input Zones
