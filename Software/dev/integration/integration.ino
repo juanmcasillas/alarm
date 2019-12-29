@@ -113,7 +113,7 @@ void setup() {
 
   // relay - disabled by default
   pinMode(RELAY_PIN, OUTPUT);
-  digitalWrite(RELAY_PIN,LLOW);
+  digitalWrite(RELAY_PIN,LHIGH); // off
 
   Serial.println("Alarm system Starting");
   //delay(INIT_DELAY);
@@ -155,13 +155,13 @@ void loop() {
   // HIGH when it's open, and LOW when it's pressed. Turn on pin 13 when the
   // button's pressed, and off when it's not:
 
-  if (z1 || z2 || z3 == LHIGH) { 
+  if (z1 || z2 || z3 == HIGH) { 
     digitalWrite(LED_PIN, LHIGH);
     
     // launch the relay (to test) if something works
-    digitalWrite(RELAY_PIN,LHIGH);
+    digitalWrite(RELAY_PIN,LLOW); // on
     delay(SIREN_DURATION);
-    digitalWrite(RELAY_PIN,LLOW);
+    digitalWrite(RELAY_PIN,LHIGH); // off
 
   } else {
     digitalWrite(LED_PIN, LLOW);
