@@ -92,10 +92,11 @@ void setup() {
   pinMode(Z3_PIN,  INPUT_PULLUP);
   pinMode(LED_PIN, OUTPUT);
 
-  // relay
+  // relay - disabled by default
   pinMode(RELAY_PIN, OUTPUT);
+  digitalWrite(RELAY_PIN,LLOW);
 
-  Serial.println("Waiting the Initial delay");
+  Serial.println("Alarm system Starting");
   //delay(INIT_DELAY);
 }
 
@@ -148,6 +149,5 @@ void loop() {
 
 
   // delays and clean ups
-  
   delay(DELAY);
 }
