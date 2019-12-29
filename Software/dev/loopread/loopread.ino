@@ -37,9 +37,9 @@
 
 // RESERVED
 // 19 -> ring alamr
-#define Z1_PIN   21
-#define Z2_PIN   22
-#define Z3_PIN   23
+#define Z1_PIN   14 // 21
+#define Z2_PIN   16 // 22
+#define Z3_PIN   17 // 23
 #define LED_PIN  2
 #define LHIGH    LOW
 #define LLOW     HIGH

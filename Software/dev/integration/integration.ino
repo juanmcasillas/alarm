@@ -50,7 +50,7 @@
 #define MOSI_PIN 23      //MOSI - harcoded in lib
 #define MISO_PIN 19      //MISO - harcoded in lib
 
-#define RELAY_PIN 16     // relay circuit (Siren)
+#define RELAY_PIN 15    // relay circuit (Siren)
 
 #define LHIGH    LOW
 #define LLOW     HIGH
@@ -135,7 +135,7 @@ void loop() {
   // HIGH when it's open, and LOW when it's pressed. Turn on pin 13 when the
   // button's pressed, and off when it's not:
 
-  if (z1 || z2 || z3 == HIGH) { 
+  if (z1 || z2 || z3 == LHIGH) { 
     digitalWrite(LED_PIN, LHIGH);
     
     // launch the relay (to test) if something works
