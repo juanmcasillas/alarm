@@ -18,7 +18,7 @@
     "ntp_period":15,
     "ntp_timezone":10,
     "ntp_daylight":true,
-    "scheduled_interval": 1.0,
+    "scheduled_interval": 0.5,
     "log_file": "/alarm.log",
 
     "siren": {  "pin": 15, "duration": 100},     

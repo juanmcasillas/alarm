@@ -14,7 +14,7 @@ bool AlarmClass::begin(fs::FS *fs, float scheduled_interval) {
 
     LOGGER.INFO("Alarm starting");
 
-    // configure the scheduler checker. Do the things each second.
+    // configure the scheduler checker. Do the things scheduled_interval
  
     _ticker.attach(this->_scheduled_interval, &AlarmClass::CheckScheduler, static_cast<void*>(this)); 
     return(true);
@@ -32,8 +32,11 @@ void AlarmClass::IsRunning() {
 void AlarmClass::CheckScheduler(void *arg) {
     AlarmClass *self = reinterpret_cast<AlarmClass *>(arg);
 
-    // running each SCHEDULE_PERIOD (1s)
-    // TODO
+    //
+    // running each SCHEDULE_PERIOD
+    // check zones, ring the alarm, this things
+    //
+
     //DEBUGLOG("TICK: %s\n", self->GetTimeStampNow().c_str());
     
    
