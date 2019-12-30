@@ -24,6 +24,7 @@ class ZoneClass {
         int pin = 0;
         String name = "default_zone";
         bool enabled = false;
+        bool fired = false; // the read event
 };
 
 class ConfigClass {
