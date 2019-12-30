@@ -23,12 +23,12 @@ bool ConfigClass::LoadConfig() {
 	configFile.readBytes(buf.get(), size);
 	configFile.close();
 	DEBUGLOG("JSON file size: %d bytes\r\n", size);
-	StaticJsonDocument<2048> json;
+	StaticJsonDocument<1024> json;
 
  
     auto error = deserializeJson(json, buf.get());
 	if (error) {
-        DEBUGLOG("ConfigClass: Failed to parse config file %s: %s\r\n", this->_config_file.c_str(), error.c_str());        
+		DEBUGLOG("ConfigClass: Failed to parse config file %s\r\n", this->_config_file.c_str());
 		return false;
 	}
    
@@ -67,51 +67,6 @@ bool ConfigClass::LoadConfig() {
     if (json.containsKey("scheduled_interval")) {  this->scheduled_interval = json["scheduled_interval"].as<float>(); }
     if (json.containsKey("log_file")) { this->log_file = json["log_file"].as<const char *>(); }
 
-    // alarm configuration block
-
-    if (json.containsKey("siren")) { 
-        StaticJsonDocument<1024> siren = json["siren"];
-        if (siren.containsKey("pin"))      { this->siren.pin = siren["pin"].as<int>(); }
-        if (siren.containsKey("duration")) { this->siren.duration = siren["duration"].as<int>(); }
-    }
-    
-    if (json.containsKey("zones")) { 
-        StaticJsonDocument<1024> zones = json["zones"];
-        JsonArray array = zones.as<JsonArray>();
-        int i = 0;
-        for(JsonVariant v : array) {
-            StaticJsonDocument<512> zone = v;
-            if (zone.containsKey("pin")) { this->zones[i].pin = zone["pin"].as<int>(); }
-            if (zone.containsKey("name")) { this->zones[i].name = zone["name"].as<const char *>(); }
-            if (zone.containsKey("enabled")) { this->zones[i].enabled = zone["enabled"].as<bool>(); }
-            i++;
-            if (i >= MAX_ZONES) {
-                break;
-            }
-        }
-    }
-
-    if (json.containsKey("keys")) {        
-        JsonArray array = json["keys"].as<JsonArray>();
-        int i = 0;
-        for(JsonVariant v : array) {
-            StaticJsonDocument<512> key = v;
-            if (key.containsKey("key")) {
-                this->keys[i][0] = key["key"][0];
-                this->keys[i][1] = key["key"][1];
-                this->keys[i][2] = key["key"][2];
-                this->keys[i][3] = key["key"][3];
-            }
-            i++;
-            if (i>= MAX_KEYS) {
-                break;
-            }
-        }
-    }
-
-    if (json.containsKey("passwd")) { this->passwd = json["passwd"].as<const char *>(); }
-     
-
 	DEBUGLOG("Config initialized.\n");
     #ifndef RELEASE
         String temp;
@@ -126,7 +81,7 @@ bool ConfigClass::LoadConfig() {
 
 bool ConfigClass::SaveConfig() {
 
-	StaticJsonDocument<2048> json;
+	StaticJsonDocument<512> json;
     
     json["ap_mode"] = this->ap_mode;
     json["dhcp"] = this->dhcp;
@@ -140,6 +95,8 @@ bool ConfigClass::SaveConfig() {
     json["retries"] = this->retries;
     json["retry_delay"] = this->retry_delay;
     json["http_port"] = this->http_port;
+    
+
     
     JsonArray jsonip = json.createNestedArray("ip");
 	jsonip.add(this->ip[0]);
@@ -173,54 +130,9 @@ bool ConfigClass::SaveConfig() {
     json["scheduled_interval"] = this->scheduled_interval;
     json["log_file"] = this->log_file;
 
-    // alarm block
-    JsonObject jsonsiren = json.createNestedObject("siren");
-    jsonsiren["pin"] = this->siren.pin;
-    jsonsiren["duration"] = this->siren.duration;
-
-    JsonArray jsonzones = json.createNestedArray("zones");
-    for (int i=0; i < MAX_ZONES; i++) {
-
-        // don't store empty zones
-        if (this->zones[i].pin == 0) {
-            continue;
-        }
-
-        StaticJsonDocument<512> jsonzone;
-        jsonzone["pin"] = this->zones[i].pin;
-        jsonzone["name"] = this->zones[i].name;
-        jsonzone["enabled"] = this->zones[i].enabled;
-        jsonzones.add(jsonzone);
-    }
-
-    JsonArray jsonkeys = json.createNestedArray("keys");
-    for (int i=0; i < MAX_KEYS; i++) {
-
-        // don't store empty keys
-        if (this->keys[i][0] == 0 && 
-            this->keys[i][1] == 0 && 
-            this->keys[i][2] == 0 && 
-            this->keys[i][3] == 0) {
-            continue;
-        }
-
-        StaticJsonDocument<512> jsonkey;
-        const size_t CAPACITY = JSON_ARRAY_SIZE(KEY_SIZE);
-        StaticJsonDocument<CAPACITY> json_key_a;
-        JsonArray array = json_key_a.to<JsonArray>();
-
-        array.add(this->keys[i][0]);
-        array.add(this->keys[i][1]);
-        array.add(this->keys[i][2]);
-        array.add(this->keys[i][3]);
-        jsonkey["key"] = array;
-        jsonkeys.add(jsonkey);
-    }
-
-    json["passwd"] = this->passwd;
+  
 
 	File configFile = _fs->open(this->_config_file.c_str(), "w");
-    
 	if (!configFile) {
 		DEBUGLOG("Failed to open config file %s for writing\r\n", this->_config_file.c_str());
 		configFile.close();

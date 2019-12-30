@@ -8,24 +8,6 @@
 
 #include "debug.h"
 
-class SirenClass {
-    public:
-        int pin = 0;
-        int duration = 0;
-
-};
-
-#define MAX_ZONES 5     // maximum monitored zones (check pins availability)
-#define MAX_KEYS  5     // maximum RFID valid keys numbers
-#define KEY_SIZE  4     // RFID key size (4 bytes)
-
-class ZoneClass {
-    public:
-        int pin = 0;
-        String name = "default_zone";
-        bool enabled = false;
-};
-
 class ConfigClass {
     public:
         bool ap_mode = false; // false, station (default)
@@ -51,28 +33,10 @@ class ConfigClass {
         float scheduled_interval = 1.0;
         String log_file = "/logfile.log";
 
-        //
-        // alarm configuration
-        //
-        
-        SirenClass siren;
-        ZoneClass zones[MAX_ZONES];
-        byte keys[MAX_KEYS][KEY_SIZE] = { 
-            { 0, 0, 0, 0 },
-            { 0, 0, 0, 0 },
-            { 0, 0, 0, 0 },
-            { 0, 0, 0, 0 },
-            { 0, 0, 0, 0 },
-        };
-
-        String passwd = "1234";
-
         bool LoadConfig();
         bool SaveConfig();
         void begin(fs::FS *fs, String config_file);
-
-
-
+    
     protected:
         fs::FS *_fs;
         String _config_file;

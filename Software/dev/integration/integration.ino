@@ -66,8 +66,8 @@ MFRC522 mfrc522(SDA_PIN, RST_PIN);
 #define VALID_KEYS_LEN  2
 #define VALID_KEY_SIZE  4
 byte valid_keys[VALID_KEYS_LEN][VALID_KEY_SIZE] = {
-  { 0xF7, 0x76, 0xDB, 0xAB },
-  { 0xD5, 0x57, 0x6F, 0x7B }
+  { 0xF7, 0x76, 0xDB, 0xAB }, // [247, 118, 219, 171]
+  { 0xD5, 0x57, 0x6F, 0x7B }  // [213, 87, 111, 123]
 };
 
 bool isEqualArray(byte* arrayA, byte* arrayB, int length) {

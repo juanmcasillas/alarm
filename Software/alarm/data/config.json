@@ -1,8 +1,8 @@
 {
     "ap_mode": false,
     "dhcp":false,
-    "wifi_ssid":"XXXX",
-    "wifi_passwd":"YYYYY",
+    "wifi_ssid":"XXXXXX",
+    "wifi_passwd":"YYYYYY",
     "ap_name":"Alarm_AP",
     "ap_passwd":"Alarm_AP",
     "http_user":"admin",
@@ -16,9 +16,20 @@
     "dns":[8,8,8,8],
     "ntp_server":"es.pool.ntp.org",
     "ntp_period":15,
-    "ntp_interval":63,
     "ntp_timezone":10,
     "ntp_daylight":true,
     "scheduled_interval": 1.0,
-    "log_file": "/alarm.log"
+    "log_file": "/alarm.log",
+
+    "siren": {  "pin": 15, "duration": 100},     
+    "zones": [ 
+          { "pin": 14, "name": "main door", "enabled": true }, 
+          { "pin": 16, "name": "hall",      "enabled": true }, 
+          { "pin": 17, "name": "garage",    "enabled": true }
+      ],
+    "keys": [      
+      { "key": [247,118,219,171] },
+      { "key": [213,87,111,123]  }
+      ],
+    "passwd": "1234"
 }
