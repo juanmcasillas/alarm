@@ -12,6 +12,8 @@ class SirenClass {
     public:
         int pin = 0;
         int duration = 0;
+        bool is_sounding = false; // alarm is sounding
+        bool mute = false; // alarm is sounding, but don't sound (test)
 
 };
 
@@ -55,7 +57,8 @@ class ConfigClass {
         //
         // alarm configuration
         //
-        
+        bool armed = false;
+        String last_event = "-";
         SirenClass siren;
         ZoneClass zones[MAX_ZONES];
         byte keys[MAX_KEYS][KEY_SIZE] = { 

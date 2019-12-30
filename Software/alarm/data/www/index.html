@@ -4,6 +4,7 @@
     <title>Alarm Control Panel</title>
 
     <link rel="stylesheet" href="all.css">
+    <script type="text/javascript" src="jquery.js"></script>
     <script type="text/javascript" src="code.js"></script>
   </head>
 
@@ -11,31 +12,29 @@
 
   <!-- alarm overall status -->
 
-  Time: 12/12/2019 18:45:33
+  <div class="timestamp">
+  Time: <span id="timestamp">12/12/2019 18:45:33</span>
+  </div>
+
+  
+
+  <div class="overall_container" id="siren_sounding">
+  <div class='flash'></div>&nbsp;<h1>ALARM SOUNDING</h1></div>
+  </div>
 
   <div class="overall_container">
-    <div class="reddot"></div>&nbsp;
-    <h1>DISARMED</h1>
-    <label class="switch">
-      <input type="checkbox">
-      <span class="slider round"></span>
-    </label>
+    <div id="armed_light"></div>&nbsp;
+    <h1>ALARM <span id="armed_text">DISARMED</span></h1>
   </div>
 
   <div class="lastevent_container">
-    Last Event: 12/12/2019 18:45:33 Main Hall
+    <b>Last Event: <span id="last_event">12/12/2019 18:45:33 Main Hall</span></b>
   </div>
 
- <div class="zones_container">
-
+<h2>Zones</h2>
+ <div class="zones_container" id ="zones_container">
   <div class="zone">
-      <div class="greendot_s"></div>&nbsp; Main Entry 
-
-      <label class="switch">
-        <input type="checkbox">
-        <span class="slider round"></span>
-      </label>
-
+    <div class="greendot_s"></div>&nbsp; Main Entry 
   </div>
 
   <div class="zone">
@@ -45,49 +44,25 @@
   <div class="zone">
     <div class="greendot_s"></div>&nbsp; Garage
   </div>
-
-
- </div>
-
-
- <div id="form-adminlogin">
-  <div>
-      <fieldset>
-          <center>
-                  <span id="pintext" class="pintext"></span>
-              <table>
-                  <tr>
-                      <td><button class="digitbutton" id="d1" name="1" value="1" onclick="ONSIGHT.UI.HandlePINButton('1')">1</button></td>
-                      <td><button class="digitbutton" id="d2" name="2" value="2" onclick="ONSIGHT.UI.HandlePINButton('2')">2</button></td>
-                      <td><button class="digitbutton" id="d3" name="3" value="3" onclick="ONSIGHT.UI.HandlePINButton('3')">3</button></td>
-                  </tr>
-                  <tr>
-                      <td><button class="digitbutton" id="d4" name="4" value="4" onclick="ONSIGHT.UI.HandlePINButton('4')">4</button></td>
-                      <td><button class="digitbutton" id="d5" name="5" value="5" onclick="ONSIGHT.UI.HandlePINButton('5')">5</button></td>
-                      <td><button class="digitbutton" id="d6" name="6" value="6" onclick="ONSIGHT.UI.HandlePINButton('6')">6</button></td>
-                  </tr>
-                  <tr>
-                      <td><button class="digitbutton" id="d7" name="7" value="7" onclick="ONSIGHT.UI.HandlePINButton('7')">7</button></td>
-                      <td><button class="digitbutton" id="d8" name="8" value="8" onclick="ONSIGHT.UI.HandlePINButton('8')">8</button></td>
-                      <td><button class="digitbutton" id="d9" name="9" value="9" onclick="ONSIGHT.UI.HandlePINButton('9')">9</button></td>
-                  </tr>
-                  <tr>
-                      <td><button class="digitbutton" id="dC" name="cD" value="C" onclick="ONSIGHT.UI.HandlePINButton('C')">C</button></td>
-                      <td><button class="digitbutton" id="d0" name="0" value="0" onclick="ONSIGHT.UI.HandlePINButton('0')">0</button></td>
-                      <td><button class="digitbutton" id="dOK" name="OK" value="#" onclick="ONSIGHT.UI.HandlePINButton('#')">#</button></td>
-                  </tr>
-              </table>
-              
-          </center>
-      </fieldset>
-  </div>
 </div>
 
+  <br/>
+  <br/>
+  <a class="buttonlink" href="config.html">CONFIG</a>
 
 
-
-    
-
-    
 </body>
+
+<!-- zone template-->
+<div id="zone_template">
+<div class="zone">
+  <div id='__ZONE_ID__' class='__ZONE_CLASS__'></div>&nbsp; __ZONE_NAME__
+</div>
+</div>
+
+<script>
+  $(function() {
+      ALARM.GetStatus();
+  });
+</script>
 </html>    

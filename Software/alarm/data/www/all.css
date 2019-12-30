@@ -12,10 +12,27 @@ H1 {
     font-size: var(--font-size);
 }
 
+
+.flash {
+  animation:flashColor 0.8s infinite;
+  width: var(--font-size);
+  height:var(--font-size);
+  border: 1px solid #f00;
+  border-radius: 50%;
+  background-color: #f00;
+}
+
+@keyframes flashColor{
+  0%{     border: 1px solid #f00; background-color: #f00;   }
+  50%{    border: 1px solid rgb(192, 189, 0); background-color:rgb(192, 189, 0);}
+  100%{   border: 1px solid rgb(170, 82, 0); background-color: rgb(170, 82, 0);}
+}
+
+
 .reddot{
   width: var(--font-size);
   height:var(--font-size);
-  bordeR: 1px solid #f00;
+  border: 1px solid #f00;
   border-radius: 50%;
   background-color: #f00;
 }
@@ -23,15 +40,15 @@ H1 {
 .greendot{
     width: var(--font-size);
     height:var(--font-size);
-    bordeR: 1px solid #00ff00;
+    border: 1px solid #00AA00;
     border-radius: 50%;
-    background-color: #00ff00;
+    background-color: #00AA00;
   }
 
   .reddot_s{
     width: calc(  var(--font-size)/2 );
     height: calc( var(--font-size)/2 );
-    bordeR: 1px solid #f00;
+    border: 1px solid #f00;
     border-radius: 50%;
     background-color: #f00;
   }
@@ -39,10 +56,18 @@ H1 {
   .greendot_s{
       width: calc(  var(--font-size)/2 );
       height: calc( var(--font-size)/2 );
-      bordeR: 1px solid #00ff00;
+      border: 1px solid #00AA00;
       border-radius: 50%;
-      background-color: #00ff00;
+      background-color: #00AA00;
     }
+
+  .greydot_s{
+      width: calc(  var(--font-size)/2 );
+      height: calc( var(--font-size)/2 );
+      border: 1px solid #808080;
+      border-radius: 50%;
+      background-color: #808080;
+  }    
 
 
   .overall_container {
@@ -55,6 +80,55 @@ H1 {
     display: flex;
     justify-content:left;
     align-items: center;
+    margin-left: 10px;
+    margin-bottom: 5px;
+}
+
+.timestamp {
+  font-size: 14px;
+  color: #808080;
+  font-family: 'Courier New', Courier, monospace
+}
+
+
+.lastevent_container {
+  font-size: 14px;
+  color: #808080;
+  font-family: 'Courier New', Courier, monospace
+}
+
+
+.digitbutton {
+  font-size: var(--font-size);
+}
+
+fieldset {
+  border-style: none;
+}
+
+
+.buttonlink  {
+  background-color: red;
+color: white;
+padding: 1em 1.5em;
+text-decoration: none;
+text-transform: uppercase;
+}
+
+.buttonlink:hover {
+background-color: #555;
+}
+
+.buttonlink:active {
+background-color: black;
+}
+
+.buttonlink:visited {
+background-color: #red;
+}
+
+#zone_template {
+  visibility: hidden;
 }
 
 /* slider */
@@ -63,8 +137,9 @@ H1 {
 .switch {
     position: relative;
     display: inline-block;
-    width: 60px;
-    height: 34px;
+    width: 50px;
+    height: var(--font-size);
+    margin-left: 5px;
   }
   
   /* Hide default HTML checkbox */
@@ -90,8 +165,8 @@ H1 {
   .slider:before {
     position: absolute;
     content: "";
-    height: 26px;
-    width: 26px;
+    height: 16px;
+    width: 16px;
     left: 4px;
     bottom: 4px;
     background-color: white;
