@@ -27,6 +27,10 @@ void setup() {
     // Serial monitor output 
     LOGGER.EnableSerialDebug(SERIAL_BAUD_RATE);
 
+    // RFID init
+    SPI.begin();  
+    mfrc522.PCD_Init();
+
     // configure CatFeeder Objects
     SPIFFS.begin();
     CONFIG.begin(&SPIFFS,CONFIG_FILE);

@@ -12,14 +12,16 @@ class SirenClass {
     public:
         int pin = 0;
         int duration = 0;
-        bool is_sounding = false; // alarm is sounding
-        bool mute = false; // alarm is sounding, but don't sound (test)
+        bool sounding = false; // alarm is sounding
+        bool muted = false; // alarm is sounding, but don't sound (test)
+        unsigned long time_left = 0;
 
 };
 
 #define MAX_ZONES 5     // maximum monitored zones (check pins availability)
 #define MAX_KEYS  5     // maximum RFID valid keys numbers
 #define KEY_SIZE  4     // RFID key size (4 bytes)
+#define MAX_TIME_DRIFT  3600 // max time in seconds to avoid update the time from client in AP_MODE
 
 class ZoneClass {
     public:
@@ -57,8 +59,7 @@ class ConfigClass {
         //
         // alarm configuration
         //
-        bool armed = false;
-        String last_event = "-";
+
         SirenClass siren;
         ZoneClass zones[MAX_ZONES];
         byte keys[MAX_KEYS][KEY_SIZE] = { 
@@ -75,6 +76,10 @@ class ConfigClass {
         bool SaveConfig();
         void begin(fs::FS *fs, String config_file);
 
+        // non persistent config
+        bool armed = false;
+        String last_event = "-";
+        bool wifi_sta = true; // false if ESP32 started as AP
 
 
     protected:

@@ -12,6 +12,7 @@
 #include <ArduinoJson.h>
 
 
+#include "rfid.h"
 #include "config.h"
 #include "logger.h"
 #include "helper.h"
@@ -32,11 +33,16 @@ class AlarmClass {
         static void CheckScheduler(void *arg); // Programmed each 1 second. Passed myself as arg.
         
         // exposed WWW methods (REST)
-        String SayHello(AsyncWebServerRequest *request);
+        String GetStatus(AsyncWebServerRequest *request);
+        String SaveConfig(AsyncWebServerRequest *request, bool *error);
+
 
         // internal methods used to do things
     protected:
-
+        void configure_inputs();
+        bool key_equal(byte *arrayA, byte *arrayB);
+        bool valid_key(byte *arrayA);
+        String print_key(byte *buffer);
 
 };
 

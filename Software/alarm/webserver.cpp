@@ -3,12 +3,6 @@
 
 WebServerClass WebServer;
 
-const char* ssid = "XXXXXX";
-const char* password = "YYYYYYYY";
-const char * hostName = "esp-async";
-const char* http_username = "admin";
-const char* http_password = "admin";
-
 
 void WebServerClass::handle() {
   ArduinoOTA.handle();
@@ -29,9 +23,9 @@ void WebServerClass::begin(int port) {
   this->WebServer = new AsyncWebServer(port);
 
   #ifdef ESP32
-  this->WebServer->addHandler(new SPIFFSEditor(SPIFFS, http_username,http_password));
+  this->WebServer->addHandler(new SPIFFSEditor(SPIFFS, CONFIG.http_user,CONFIG.http_passwd));
   #elif defined(ESP8266)
-  this->WebServer->addHandler(new SPIFFSEditor(http_username,http_password));
+  this->WebServer->addHandler(new SPIFFSEditor(CONFIG.http_user,CONFIG.http_passwd));
   #endif
     
     this->WebServer->on("/heap", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -46,11 +40,11 @@ void WebServerClass::begin(int port) {
       //  return request->requestAuthentication();
       if (this->_usercallback)
       {
-        this->_usercallback(request);
+        return this->_usercallback(request);
       }
       else
       {
-        String values = "";
+        String values = "Callback 500 error";
         request->send(500, "text/plain", values);
         values = "";
       }
