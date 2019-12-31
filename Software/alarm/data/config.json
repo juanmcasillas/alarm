@@ -1,8 +1,8 @@
 {
     "ap_mode": false,
     "dhcp":false,
-    "wifi_ssid":"XXXXXX",
-    "wifi_passwd":"YYYYYY",
+    "wifi_ssid":"WLAN_AP24",
+    "wifi_passwd":"F1rulais66!!",
     "ap_name":"Alarm_AP",
     "ap_passwd":"Alarm_AP",
     "http_user":"admin",

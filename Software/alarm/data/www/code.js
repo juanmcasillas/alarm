@@ -6,9 +6,8 @@ ALARM.STATUS = new Object();
 ALARM.PIN = "";
 
 ALARM.interval = 1000; // ms time to pull the status
-ALARM.URL.get_status = "/get_status.json"; // /alarm/get_status
-ALARM.URL.save_config = "/alarm/saveconfig";
-ALARM.URL.config = "/config.html";
+ALARM.URL.get_status = "/alarm/status.json"; // /alarm/get_status
+ALARM.URL.save_config = "/alarm/save.json";
 ALARM.timeout = 0; // timeouthandler
 
 ALARM.UI.HandlePINButton = function(b) {
@@ -52,15 +51,8 @@ ALARM.GetStatus = function (set_timeout=true) {
     //postData.append("grade_to", ONSIGHT.Defaults.grade_to);
 
     var dobj = new Date();
-
-    // "25/08/2019"
-    var d_s = dobj.toLocaleDateString('es-ES', { 
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-    });
-    var t_s = dobj.toLocaleTimeString() // "11:00:49"
-    postData.append('stamp',d_s + ' ' + t_s );
+    // now() return milliseconds.
+    postData.append('stamp',parseInt(Date.now()/1000)); // timestamp
 
     //
     // call jquery instead, if works
@@ -78,9 +70,10 @@ ALARM.GetStatus = function (set_timeout=true) {
             ALARM.LoadStatus(data,set_timeout);
         },
         // TODO add a spinner and trap errors here
-        error: function (request, status, error) {          
-            alert(status + ":" + request.responseText);
-
+        error: function (request, status, error) {
+            if (request.responseText != undefined) {
+                alert("GetStatus(): " + status + ":" + request.responseText);
+            }
         },
         beforeSend: function (request, settings) {
         }
@@ -173,22 +166,16 @@ ALARM.LoadStatus = function(retobj, set_timeout) {
 ALARM.SaveConfig = function() {
     var postData = new FormData();
 
+    var jret = new Object();
+
     var dobj = new Date();
-
-    // "25/08/2019"
-    var d_s = dobj.toLocaleDateString('es-ES', { 
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-    });
-    var t_s = dobj.toLocaleTimeString() // "11:00:49"
-    postData.append('stamp',d_s + ' ' + t_s );
-
+    jret["stamp"] = parseInt(Date.now()/1000); // timestamp
     // get values from configuration
 
-
-    postData.append('armed', document.getElementById('armed_check').checked);
-    postData.append('muted', document.getElementById('mute_siren').checked);
+    jret["armed"] = document.getElementById('armed_check').checked
+    jret["muted"] = document.getElementById('mute_siren').checked
+    //postData.append('armed', document.getElementById('armed_check').checked);
+    //postData.append('muted', document.getElementById('mute_siren').checked);
 
     // get all checkbox with id that starts with...
     var zones  = $('[id*="zone_check_"]');
@@ -196,13 +183,16 @@ ALARM.SaveConfig = function() {
     for (var i=0; i<zones.length; i++) {
         zone = zones[i];
         var o = Object();
-        o.id = 1,
+        o.id = zone.id.replace('zone_check_',''); // get id
         o.enabled = zone.checked;
         ret.push(o);
     }
 
-    postData.append('zones', JSON.stringify(ret));
-    postData.append('auth', ALARM.PIN);
+    jret["zones"] = ret
+    jret["auth"] = ALARM.PIN
+    postData.append('args', JSON.stringify(jret)); // send everything as json
+    //postData.append('zones', JSON.stringify(ret));
+    //postData.append('auth', ALARM.PIN);
     //
     // call jquery instead, if works
     // ajax('/get_problem', 'POST', data, true, LoadMoves);
@@ -216,12 +206,11 @@ ALARM.SaveConfig = function() {
         crossDomain: true,
         data: postData,
         success: function (data) {
-            window.location.href(ALARM.URL.save_config);
+            ALARM.LoadStatus(data);
         },
         // TODO add a spinner and trap errors here
-        error: function (request, status, error) {          
+        error: function (request, status, error) {     
             alert(status + ":" + request.responseText);
-
         },
         beforeSend: function (request, settings) {
         }

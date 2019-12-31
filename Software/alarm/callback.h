@@ -7,14 +7,27 @@
 
 void callbackHandler(AsyncWebServerRequest *request) {
 
-	if (request->url() == "/alarm/hello") {
-		//contruct and send and desired response
-		//request->send(200, "text/plain", "<h1>hello world</h1>\n");
-        String ret = ALARM.SayHello(request);
-        DEBUGLOG("callbackHandler:/hello: (%s)\n",ret.c_str());
-        request->send(200, "text/plain", ret);
+    // return built status (JSON)
+	if (request->url() == "/alarm/status.json") {
+        String ret = ALARM.GetStatus(request);
+        //DEBUGLOG("callbackHandler:/status.json: (%s)\n",ret.c_str());
+        //DEBUGLOG("callbackHandler:/status.json: (%s)\n","...");
+        request->send(200, "application/json", ret);
         return;
-	}
+	}    
+
+    // Save partial config (JSON)
+	if (request->url() == "/alarm/save.json") {
+        bool error = false;
+        String ret = ALARM.SaveConfig(request, &error);
+        //DEBUGLOG("callbackHandler:/save.json: (%s)\n",ret.c_str());
+        //DEBUGLOG("callbackHandler:/save.json: (%s)\n","...");
+        if (!error)
+            request->send(200, "application/json", ret);
+        else
+            request->send(500, "application/json", ret);
+        return;
+	}      
 }
 
 #endif

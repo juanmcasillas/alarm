@@ -29,11 +29,13 @@ class AlarmClass {
         bool begin(fs::FS *fs, float scheduled_interval);
         void IsRunning(); // shows the start information
 
-        static void CheckScheduler(void *arg); // Programmed each 1 second. Passed myself as arg.
-        
-        // exposed WWW methods (REST)
-        String SayHello(AsyncWebServerRequest *request);
 
+        static void CheckScheduler(void *arg); // Programmed each 1 second. Passed myself as arg.
+
+
+        // exposed WWW methods (REST)
+        String GetStatus(AsyncWebServerRequest *request);
+        String SaveConfig(AsyncWebServerRequest *request, bool *error);
         // internal methods used to do things
     protected:
 

@@ -41,6 +41,7 @@ void HelperClass::Setup_NTP() {
 
 void HelperClass::Configure_NetWork() {
 
+    CONFIG.wifi_sta = true; // try to start as STA
     DEBUGLOG("HW MAC_ADDR: %s\n", this->getMacAddress().c_str());
 
     // if not DHCP, configure static IP values (default)
@@ -93,7 +94,7 @@ void HelperClass::Setup_AP() {
      WiFi.softAP(CONFIG.ap_name.c_str(), CONFIG.ap_passwd.c_str());
      IPAddress ip = WiFi.softAPIP();
      DEBUGLOG("Configured as AP. http://%d.%d.%d.%d/ to manage\n", ip[0], ip[1], ip[2], ip[3]);
-
+     CONFIG.wifi_sta = false; // we are AP
 }
 
 bool  HelperClass::Setup_STA() {
