@@ -16,7 +16,6 @@
 #include <WiFiUdp.h>
 
 #include "config.h"
-
 #ifndef __WEBSERVER_H__
 #define __WEBSERVER_H__
 

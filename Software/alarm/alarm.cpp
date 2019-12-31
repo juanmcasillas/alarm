@@ -129,6 +129,7 @@ String AlarmClass::GetStatus(AsyncWebServerRequest *request) {
         String s_stamp = p->value().c_str();
         long stamp = s_stamp.toInt();
 
+<<<<<<< HEAD
         // if drift is greater than one hour, update it
         // (to avoid constant time updates)
         if (abs(now() - stamp) > MAX_TIME_DRIFT) {
@@ -160,12 +161,68 @@ String AlarmClass::GetStatus(AsyncWebServerRequest *request) {
         jsonzones.add(jsonzone);
     }
 
+=======
+
+
+
+String AlarmClass::GetStatus(AsyncWebServerRequest *request) {
+    StaticJsonDocument<1024> root;
+
+    // handle timeStamp set if AP mode is set
+    // set the stamp as UTC instead TZ, this
+    // can be configured, but for now, its ok
+
+    if(request->hasParam("stamp", true) && CONFIG.wifi_sta == false) { 
+        AsyncWebParameter* p = request->getParam("stamp", true);
+        String s_stamp =  p->value().c_str();
+        long stamp = s_stamp.toInt();
+
+        // if drift is greater than one hour, update it
+        // (to avoid constant time updates)
+        if (abs(now()-stamp) > MAX_TIME_DRIFT) {
+            setTime(stamp);
+            LOGGER.INFO("Time updated");
+        }
+
+    }
+
+    root["status"] = "OK";
+    root["msg"] = "status.json";
+    root["time"] = HELPER.GetTimeStampNow();
+    root["armed"] = CONFIG.armed;
+    root["last_event"] = CONFIG.last_event;
+    root["siren"] = CONFIG.siren.sounding;
+    root["muted"] = CONFIG.siren.muted;
+
+    JsonArray jsonzones = root.createNestedArray("zones");
+    for (int i=0; i < MAX_ZONES; i++) {
+
+        // don't store empty zones
+        if (CONFIG.zones[i].pin == 0) {
+            continue;
+        }
+
+        StaticJsonDocument<512> jsonzone;
+        jsonzone["id"] = i;
+        jsonzone["name"] = CONFIG.zones[i].name;
+        jsonzone["enabled"] = CONFIG.zones[i].enabled;
+        jsonzone["fired"] = CONFIG.zones[i].fired;
+        jsonzones.add(jsonzone);
+    }
+
+>>>>>>> b0bd688eb96b47bffe74e06514e50a5d0e530a01
     String ret;
     serializeJson(root, ret);
     return (ret);
 }
 
+<<<<<<< HEAD
 String AlarmClass::SaveConfig(AsyncWebServerRequest *request, bool *error) {
+=======
+
+String AlarmClass::SaveConfig(AsyncWebServerRequest *request, bool *error) {
+
+>>>>>>> b0bd688eb96b47bffe74e06514e50a5d0e530a01
     // STEP 1
     // requires one parameter, args with the json string inside, using POST (true= is POST)
 
@@ -179,6 +236,7 @@ String AlarmClass::SaveConfig(AsyncWebServerRequest *request, bool *error) {
     root["time"] = HELPER.GetTimeStampNow();
 
     // if args not found, exit
+<<<<<<< HEAD
     if (!request->hasParam("args", true)) {
         serializeJson(root, ret);
         return (ret);
@@ -190,17 +248,89 @@ String AlarmClass::SaveConfig(AsyncWebServerRequest *request, bool *error) {
     // step 2, deserialize the JSON info
     StaticJsonDocument<2048> json;
 
+=======
+    if(! request->hasParam("args", true)) {
+        serializeJson(root,ret);
+        return(ret);
+    }
+
+    AsyncWebParameter* p = request->getParam("args", true);
+    json_value =  p->value().c_str();
+
+    // step 2, deserialize the JSON info
+    StaticJsonDocument<2048> json;
+        
+>>>>>>> b0bd688eb96b47bffe74e06514e50a5d0e530a01
     auto jerror = deserializeJson(json, json_value);
     if (jerror) {
         // error parsing json args
         root["msg"] = jerror.c_str();
         DEBUGLOG("SaveConfig: Failed to parse args: %s\n", jerror.c_str());
+<<<<<<< HEAD
         serializeJson(root, ret);
         return (ret);
     }
 
     // process the save configuration values.
     // first, check the AUTH is set & is correct
+=======
+        serializeJson(root,ret);
+        return(ret);
+    
+    }
+    
+    // process the save configuration values.
+    // first, check the AUTH is set & is correct
+
+    if ( !json.containsKey("auth") || 
+         (json.containsKey("auth") && CONFIG.passwd != json["auth"].as<const char *>()) ) {
+        // no auth, or invalid auth        
+        root["msg"] = "bad auth";
+        DEBUGLOG("SaveConfig: bad auth\n");
+        serializeJson(root,ret);
+        return(ret);
+      
+    }
+
+    // extract parameters
+    if (json.containsKey("armed")) CONFIG.armed = json["armed"].as<bool>();
+    if (json.containsKey("muted")) CONFIG.siren.muted = json["muted"].as<bool>();
+
+    if (json.containsKey("zones")) { 
+        StaticJsonDocument<1024> zones = json["zones"];
+        JsonArray array = zones.as<JsonArray>();
+        int i = 0;
+        for(JsonVariant v : array) {
+            StaticJsonDocument<512> zone = v;
+            int id = -1;
+            int enabled = false;
+
+            if (zone.containsKey("id")) { id = zone["id"].as<int>(); }
+            if (zone.containsKey("enabled")) { enabled = zone["enabled"].as<bool>(); }
+            
+            if (id >= 0 && id < MAX_ZONES) {
+                CONFIG.zones[id].enabled = enabled;
+            }
+
+            i++;
+            if (i >= MAX_ZONES) {
+                break;
+            }
+        }
+    }
+    // do the config persistent
+    
+    CONFIG.SaveConfig();
+    LOGGER.INFO("Configuration Updated");
+
+    *error = false;
+    // return the Status information, instead my JSON
+    return( this->GetStatus(request) );
+}
+
+////
+/// config
+>>>>>>> b0bd688eb96b47bffe74e06514e50a5d0e530a01
 
     if (!json.containsKey("auth") ||
         (json.containsKey("auth") && CONFIG.passwd != json["auth"].as<const char *>())) {

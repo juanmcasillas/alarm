@@ -23,6 +23,8 @@ class SirenClass {
 #define KEY_SIZE  4     // RFID key size (4 bytes)
 #define MAX_TIME_DRIFT  3600 // max time in seconds to avoid update the time from client in AP_MODE
 
+#define MAX_TIME_DRIFT 3600  // max time drift in seconds when trying to setting the time as AP (no NTP, no RTC)
+
 class ZoneClass {
     public:
         int pin = 0;
@@ -59,7 +61,6 @@ class ConfigClass {
         //
         // alarm configuration
         //
-
         SirenClass siren;
         ZoneClass zones[MAX_ZONES];
         byte keys[MAX_KEYS][KEY_SIZE] = { 
@@ -71,6 +72,12 @@ class ConfigClass {
         };
 
         String passwd = "1234";
+
+        // non persistent (config) values
+        bool armed = false;      
+        String last_event = "-";
+        bool wifi_sta = true; // true if started as STA, false if AP
+
 
         bool LoadConfig();
         bool SaveConfig();

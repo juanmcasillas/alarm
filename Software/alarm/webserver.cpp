@@ -3,11 +3,13 @@
 
 WebServerClass WebServer;
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> b0bd688eb96b47bffe74e06514e50a5d0e530a01
 void WebServerClass::handle() {
   ArduinoOTA.handle();
 }
-
 
 void WebServerClass::set_usercallbackfilter(String s) {
 	this->_usercallbackfilter = s;
