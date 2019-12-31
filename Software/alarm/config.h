@@ -73,12 +73,6 @@ class ConfigClass {
 
         String passwd = "1234";
 
-        // non persistent (config) values
-        bool armed = false;      
-        String last_event = "-";
-        bool wifi_sta = true; // true if started as STA, false if AP
-
-
         bool LoadConfig();
         bool SaveConfig();
         void begin(fs::FS *fs, String config_file);
@@ -95,5 +89,4 @@ class ConfigClass {
 };
 
 extern ConfigClass CONFIG;
-
 #endif

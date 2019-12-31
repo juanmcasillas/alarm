@@ -43,7 +43,11 @@ void setup() {
     WebServer.set_usercallbackfilter(CALLBACK_PREFIX);
     WebServer.setUSERCallback(callbackHandler);
     WebServer.begin(CONFIG.http_port);
-   
+    //
+    // serve the log file as static one
+    //
+    WebServer.WebServer->serveStatic(CONFIG.log_file.c_str(), SPIFFS, CONFIG.log_file.c_str());
+
     // configure the logger to be served statically
     // maybe all the static elements in the directory
     // should be handled in this way.

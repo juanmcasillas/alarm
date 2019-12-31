@@ -3,10 +3,7 @@
 
 WebServerClass WebServer;
 
-<<<<<<< HEAD
 
-=======
->>>>>>> b0bd688eb96b47bffe74e06514e50a5d0e530a01
 void WebServerClass::handle() {
   ArduinoOTA.handle();
 }
@@ -54,6 +51,7 @@ void WebServerClass::begin(int port) {
 
     // serve files in the www directory
     this->WebServer->serveStatic("/", SPIFFS, "/www/").setDefaultFile("index.html");
+    
 
     this->WebServer->onNotFound([](AsyncWebServerRequest *request){
         Serial.printf("NOT_FOUND: ");

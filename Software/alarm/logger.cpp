@@ -15,7 +15,7 @@ bool LoggerClass::begin(fs::FS *fs, String fname) {
     //if (!_fs) { _fs->begin(); }
     
     this->fname = fname;
-    this->fd = _fs->open(this->fname.c_str(),"w+"); // a+
+    this->fd = _fs->open(this->fname.c_str(),"a+"); // w+
     if (!this->fd) {
         return (false);
     }
