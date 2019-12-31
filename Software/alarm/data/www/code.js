@@ -103,7 +103,8 @@ ALARM.LoadStatus = function(retobj, set_timeout) {
     }
 
     if (document.getElementById("siren_sounding")) {
-        document.getElementById("siren_sounding").style.display = (ALARM.STATUS["siren"] ? 'true' : 'none');
+        (ALARM.STATUS["siren"] ? $('#siren_sounding').show(): $('#siren_sounding').hide());
+        //document.getElementById("siren_sounding").style.display = (ALARM.STATUS["siren"] ? 'true' : 'none');
     }    
 
     // red: not armed
