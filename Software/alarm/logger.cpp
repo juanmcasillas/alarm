@@ -15,7 +15,7 @@ bool LoggerClass::begin(fs::FS *fs, String fname) {
     //if (!_fs) { _fs->begin(); }
     
     this->fname = fname;
-    this->fd = _fs->open(this->fname.c_str(),"a+"); // w+
+    this->fd = _fs->open(this->fname.c_str(),"w+"); // a+
     if (!this->fd) {
         return (false);
     }
@@ -28,7 +28,7 @@ bool LoggerClass::Truncate() {
       // return( SPIFFS_truncate(_fs, this->fd) );
       this->fd.close();
       _fs->remove(this->fname);
-      this->fd = _fs->open(this->fname.c_str(),"a+");
+      this->fd = _fs->open(this->fname.c_str(),"w+");
       if (!this->fd) {
         return (false);
       }

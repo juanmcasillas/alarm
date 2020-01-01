@@ -54,6 +54,7 @@ void setup() {
     // ESPHTTPServer.serveStatic("/catfeeder.log", SPIFFS, "/catfeeder.log");
 
     ALARM.IsRunning();
+   
     /* add setup code here */
 }
 

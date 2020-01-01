@@ -110,14 +110,15 @@ bool ConfigClass::LoadConfig() {
     }
 
     if (json.containsKey("passwd")) { this->passwd = json["passwd"].as<const char *>(); }
+    if (json.containsKey("armed_delay")) { this->armed_delay = json["armed_delay"].as<unsigned long>(); }
      
 
 	DEBUGLOG("Config initialized.\n");
     #ifndef RELEASE
-        String temp;
-        serializeJsonPretty(json, temp);
-        DEBUGLOG(temp.c_str());
-        DEBUGLOG("\n\n");
+        //String temp;
+        //serializeJsonPretty(json, temp);
+        //DEBUGLOG(temp.c_str());
+        //DEBUGLOG("\n\n");
     #endif
 	return true;
 }
@@ -218,6 +219,7 @@ bool ConfigClass::SaveConfig() {
     }
 
     json["passwd"] = this->passwd;
+    json["armed_delay"] = this->armed_delay;
 
 	File configFile = _fs->open(this->_config_file.c_str(), "w");
     
@@ -228,9 +230,9 @@ bool ConfigClass::SaveConfig() {
 	}
 
 #ifndef RELEASE
-	String temp;
-	serializeJsonPretty(json, temp);
-    DEBUGLOG(temp.c_str());
+	//String temp;
+	//serializeJsonPretty(json, temp);
+    //DEBUGLOG(temp.c_str());
 #endif
 
 	serializeJson(json,configFile);

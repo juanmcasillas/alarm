@@ -44,6 +44,11 @@ class AlarmClass {
         bool valid_key(byte *arrayA);
         String print_key(byte *buffer);
 
+        void siren_on();
+        void siren_sound();
+        void siren_off();
+        void siren_beep();
+        void siren_beep_init();
 };
 
 #endif

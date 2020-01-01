@@ -28,23 +28,27 @@ void AlarmClass::CheckScheduler(void *arg) {
 
     //
     // running each SCHEDULE_PERIOD
-    // CHECK RFID for armed, disarmed
-    // check zones for ringing the alarm
-    // etc
+    // First, read all the inputs, and set the flags
+    // Second, run the state machine and fire events
     //
+
+    KEY_STATUS key_status = KEY_STATUS::NONE;
+    String key = "";
+    bool any_zone_fired = false;    // true if zone is enabled, and fired.
 
     if (mfrc522.PICC_IsNewCardPresent()) {
         if (mfrc522.PICC_ReadCardSerial()) {
             if (self->valid_key(mfrc522.uid.uidByte)) {
-                CONFIG.armed = ! CONFIG.armed;
-                LOGGER.INFO("RFID read valid RFID key. Changing status to %s",
-                    (CONFIG.armed ? "ARMED" : "DISARMED"));
+                key_status = KEY_STATUS::VALID;
             } else {
-                String key = self->print_key(mfrc522.uid.uidByte);  
-                LOGGER.WARNING("Trying to using an invalid key: %s", key.c_str());
+                key_status = KEY_STATUS::INVALID;
             }
-             mfrc522.PICC_HaltA();
+            key = self->print_key(mfrc522.uid.uidByte);  
+            mfrc522.PICC_HaltA();
         }
+    }
+    if (key_status == KEY_STATUS::INVALID) {
+        LOGGER.WARNING("Trying to using an invalid key: %s", key.c_str());
     }
 
     for (int i = 0; i < MAX_ZONES; i++) {
@@ -53,57 +57,170 @@ void AlarmClass::CheckScheduler(void *arg) {
         }
         int value = digitalRead(CONFIG.zones[i].pin);
 
+        /*
         DEBUGLOG("%s: read: %d (%s)\n", 
                 CONFIG.zones[i].name.c_str(), 
                 value, 
                 (CONFIG.zones[i].enabled ? "enabled" : "disabled"));
+        */
 
         CONFIG.zones[i].fired = (value == HIGH ? true : false);
 
-        if (value == HIGH && CONFIG.zones[i].enabled && CONFIG.armed) {            
-            CONFIG.siren.sounding = true; // set the SIREN to SOUND (working)
+        if (value == HIGH && CONFIG.zones[i].enabled ) {          
+            any_zone_fired = true;  
             LOGGER.INFO("Zone: %s wired to pin %d FIRED",CONFIG.zones[i].name.c_str(), CONFIG.zones[i].pin);
+
             CONFIG.last_event = HELPER.GetTimeStampNow() + " " + CONFIG.zones[i].name;
         }
     }
 
-    // manage the ring alarm here, without delay
+    //
+    // run the state machine
+    // CONFIG.armed has the web selector for ARM or DISARM the alarm.
+    // ARMED_DELAY is an internal (trasient) state to allow people going out
+    //
 
-    if (CONFIG.siren.sounding) {
+    switch (CONFIG.STATUS) {
 
-        if (!CONFIG.armed) {
-            // alarm has been disarmed, stop the sound.
-            LOGGER.INFO("Alarm OFF (disarmed)");
-            CONFIG.siren.sounding = false;
-            CONFIG.siren.time_left = 0;
-            if (! CONFIG.siren.muted) {
-                digitalWrite(CONFIG.siren.pin, LOW);  // off
-            }
-        } else {
-            // alarm is armed, so check the cases
-            if (CONFIG.siren.time_left == 0) {
-                // Fire the alarm
-                if (! CONFIG.siren.muted) {
-                    digitalWrite(CONFIG.siren.pin, HIGH);  // on
-                }
-                CONFIG.siren.time_left = millis();
-                LOGGER.INFO("Alarm ON");
-            }
-            else {
-                if (millis() >  CONFIG.siren.time_left + CONFIG.siren.duration) {
-                    if (! CONFIG.siren.muted) {
-                        digitalWrite(CONFIG.siren.pin, LOW);  // off
-                    }
-                    LOGGER.INFO("Alarm OFF");
-                    CONFIG.siren.sounding = false;
-                    CONFIG.siren.time_left = 0;
-                }
+        case ALARM_STATUS::DISARMED:
+            //DEBUGLOG("STATUS::DISARMED\n");
 
+            if (key_status == KEY_STATUS::VALID || CONFIG.armed) {
+                // go to ALARM_STATUS::ARMED_DELAY in the next round
+                LOGGER.INFO("RFID read a valid ARMED key. Going to ARMED_DELAY state");
+                CONFIG.STATUS = ALARM_STATUS::ARMED_DELAY;
+                CONFIG.armed = true;
+                CONFIG.armed_delay_time_left = millis();
+                self->siren_beep_init();
+                return;
             }
-        }
-    }
+            break;
+
+        case ALARM_STATUS::ARMED_DELAY:
+            //DEBUGLOG("STATUS::ARMED_DELAY\n");
+
+            if (key_status == KEY_STATUS::VALID || ! CONFIG.armed) {
+                // go to ALARM_STATUS::DISARMED in next round
+                LOGGER.INFO("RFID read a valid DISARMED key. Going to DISARMED state");
+                CONFIG.STATUS = ALARM_STATUS::DISARMED;
+                CONFIG.armed = false;
+                CONFIG.armed_delay_time_left = 0;
+                return;
+            }
+            // in this state, if time has passed, move to ARMED.
+            if (millis() >  CONFIG.armed_delay_time_left + CONFIG.armed_delay) {
+                LOGGER.INFO("ARMED_DELAY time expired. Going to ARMED state");
+                CONFIG.STATUS = ALARM_STATUS::ARMED;
+                CONFIG.armed_delay_time_left = 0;
+                self->siren_beep_init();
+                return;
+            }
+            // else, do some sound for confirmation during the DELAY time
+            self->siren_beep();
+            break;
+
+        case ALARM_STATUS::ARMED:
+            //DEBUGLOG("STATUS::ARMED\n");
+
+            if (key_status == KEY_STATUS::VALID || !CONFIG.armed) {
+                // go to ALARM_STATUS::DISARMED in next round
+                LOGGER.INFO("RFID read a valid DISARMED key. Going to DISARMED state");
+                CONFIG.STATUS = ALARM_STATUS::DISARMED;
+                CONFIG.armed = false;
+                self->siren_off();
+                return;
+            }
+
+            // check here if some has been fired, and start the alarm, in that case.
+
+            if (!CONFIG.siren.sounding && any_zone_fired) {
+                LOGGER.ERROR("Intrusion detected [%s]", CONFIG.last_event.c_str());
+                self->siren_on();
+                return;
+            }
+
+            if (CONFIG.siren.sounding) {
+                self->siren_sound();
+                return;
+            }
+
+            break;
+
+    };
 
 }
+
+void AlarmClass::siren_on() {
+
+    if (CONFIG.siren.sounding) {
+        return;
+    }
+
+    CONFIG.siren.sounding = true;
+
+    if (! CONFIG.siren.muted) {
+        digitalWrite(CONFIG.siren.pin, HIGH);  // on
+    }
+
+    CONFIG.siren.time_left = millis();
+    LOGGER.INFO("Siren ON");
+
+}
+
+void AlarmClass::siren_sound() {
+    if (millis() >  CONFIG.siren.time_left + CONFIG.siren.duration) {
+        this->siren_off();
+    }
+}
+
+void AlarmClass::siren_off() {
+   
+    if (! CONFIG.siren.sounding) {
+        return;
+    }
+
+    CONFIG.siren.sounding = false;
+
+    if (! CONFIG.siren.muted) {
+        digitalWrite(CONFIG.siren.pin, LOW);  // off
+    }
+
+    CONFIG.siren.time_left = 0;
+    LOGGER.INFO("Siren OFF"); 
+}
+
+void AlarmClass::siren_beep_init() {
+    CONFIG.siren.beep_wait_mode = false;
+    CONFIG.siren.beep_left = 0;
+    digitalWrite(CONFIG.siren.pin, LOW);  // off
+}
+
+void AlarmClass::siren_beep() {
+   if (CONFIG.siren.beep_wait_mode == false) {
+        if (CONFIG.siren.beep_left == 0) {
+            CONFIG.siren.beep_left = millis();
+            digitalWrite(CONFIG.siren.pin, HIGH);  // on
+            return;
+        }
+        if (millis() >  CONFIG.siren.beep_left + CONFIG.siren.beep_duration) {
+            digitalWrite(CONFIG.siren.pin, LOW);  // on
+            CONFIG.siren.beep_left = 0;
+            CONFIG.siren.beep_wait_mode = true;
+            return;
+        }
+   } else {
+        if (CONFIG.siren.beep_left == 0) {
+            CONFIG.siren.beep_left = millis();
+            return;
+        }
+        if (millis() >  CONFIG.siren.beep_left + CONFIG.siren.beep_wait) {
+            CONFIG.siren.beep_left = 0;
+            CONFIG.siren.beep_wait_mode = false;
+            return;
+        }
+   }
+}
+
 
 void AlarmClass::configure_inputs() {
     // configure zones
@@ -116,6 +233,7 @@ void AlarmClass::configure_inputs() {
     }
 
     // configure relay pin
+
     pinMode(CONFIG.siren.pin, OUTPUT);
     digitalWrite(CONFIG.siren.pin, LOW);  // alarm, off
 }

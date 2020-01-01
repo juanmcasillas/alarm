@@ -19,4 +19,9 @@
 
 extern MFRC522 mfrc522;
 
+enum class KEY_STATUS: int {
+    NONE    = 0,  // no card read
+    VALID   = 1,  // valid card (RFID) read (key in the table of valid keys)
+    INVALID = 2   // invalid key (not registered key)
+};
 #endif
