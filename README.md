@@ -12,6 +12,7 @@ This project provides:
 1. The software to control the feeder.
 2. The electronics schemas to connect all the parts.
 
+<img src="doc/alarm_new.jpg"></img>
 
 # Table Of Contents
 
@@ -19,7 +20,8 @@ This project provides:
 2. [Wiring Diagram](#wiring-diagram)
     1. [PIR Detector](#pir-detector)
     2. [Siren](#siren)
-    3. [Power supply](#power-supply)
+    3. [RFID RC522 Reader](#rfid-reader)
+    4. [Power supply](#power-supply)
 
 3. [How to install the Software](#how-to-install-the-software)
     1. [Arduino Board Setup](#arduino-board-setup)
@@ -115,10 +117,16 @@ In the alarm side, we get three hoses for each detector. Each hose have three pa
 Wiring:
 
 * We wire all the *GREEN* cables together, to the `GND_01` CLAMP
+* Wire each *YELLOW* wire to the `Gxx` input PIN (ESP32)
+
+<img src="doc/signals.jpg"></img>
+
+
 * We wire all the *WHITE* cables together, to the `OUT2` CLAMP (GND)
 * We wire all the *RED* cables together, to the `OUT1` CLAMP (VCC)
 * We wire the **SIREN's** white cable to the `OUT2` CLAMP (GND)
-* Wire each *YELLOW* wire to the `Gxx` input PIN (ESP32)
+
+<img src="doc/12v_wires.jpg"></img>
 
 ## Siren
 
@@ -152,10 +160,19 @@ Easily configured in the `config.json` file:
   "siren": {  "pin": 15, "duration": 60000}, 
 ```
 
+## RFID Reader
+
+<img src="doc/alarm_detail.jpg"></img>
+
+
 ## Power Supply
 
 
+## Old Alarm System
 
+DSC power832 5010
+
+<img src="doc/alarm_old.jpg"></img>
 
 
 # 3D Printing and Assembly
