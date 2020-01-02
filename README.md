@@ -117,7 +117,7 @@ Wiring:
 * We wire all the *GREEN* cables together, to the `GND_01` CLAMP
 * We wire all the *WHITE* cables together, to the `OUT2` CLAMP (GND)
 * We wire all the *RED* cables together, to the `OUT1` CLAMP (VCC)
-* We wire the **SIRENS** white cable to the `OUT2` CLAMP (GND)
+* We wire the **SIREN's** white cable to the `OUT2` CLAMP (GND)
 * Wire each *YELLOW* wire to the `Gxx` input PIN (ESP32)
 
 ## Siren
