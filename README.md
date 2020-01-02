@@ -64,11 +64,97 @@ This project provides:
 
 # Wiring Diagram
 
+<img src="doc/wiring.png">
+
 ## Pir Detector
+
+Commercial PIR detectors are build on a PIR detector, and a microwave detector, in the same package. They are
+configured to skip pets (less 5Kg) and you can fine-tune the detection with some resistors inside the box. They
+feature an anti-tamper circuit (switches connected to the box) based on an NC (normally closed) circuit (the blue and light blue cables). These detectors are powered by a DC current about 9V->18V (I get mine working fine at 12V). The 
+detector output is built on a single relay, NC (normally closed), NO (normally open). In these case, all my detectors are wired as NC (circuit is allways closed, but if something is found, then is open). This is importat becouse you need to configure your inputs based on this: ***NC: input PULLUP, NO: input PULLDOWN***.
+
+Connections in the detector side:
+
+<img src="doc/detector.png"></img>
+
+| PIN       |WIRED_TO   | COLOR  | DESCRIPTION                       |
+|-----------|-----------|--------|----------------------------------:|
+|T$NC       | None      | Blue   | tamper output pin                 |
+|T$COM      | None      | Purple | put all these together to GND_xx  |
+|VCC        | VCC clamp | Red    | 12V-18V.                          |
+|GND        | GND clamp | Wite   | put all these together to OUT2    |
+|R$NC       | Zx pin    | Yellow | use the Gxx with INPUT_PULLUP     |
+|R$COM      | GND pin   | Green  | put all these together to GND_01  |
+|R$NO       | None      | None   | No connected                      |
+
+I have three detectors, So I have three zones, requiring 3 input pins for each zone. I wired it to 14,16,17 GPIO
+pins:
+
+| ZONE      | PIN    |
+|-----------|-------:|
+| 1         | G14    |
+| 2         | G16    |
+| 3         | G17    |
+
+Easily configured in the `config.json` file:
+
+```json
+ "zones": [ 
+          { "pin": 14, "name": "main door", "enabled": true }, 
+          { "pin": 16, "name": "hall",      "enabled": true }, 
+          { "pin": 17, "name": "garage",    "enabled": true }
+      ],
+```
+
+In the alarm side, we get three hoses for each detector. Each hose have three pairs of wires:
+
+* Blue, Purple: Tamper wires. Not used.
+* Red, White: Power wires. Red is VCC, white is GND.
+* Yellow, Green: Signal wires. Yellow is the signal, Green is the GND.
+
+Wiring:
+
+* We wire all the *GREEN* cables together, to the `GND_01` CLAMP
+* We wire all the *WHITE* cables together, to the `OUT2` CLAMP (GND)
+* We wire all the *RED* cables together, to the `OUT1` CLAMP (VCC)
+* We wire the **SIRENS** white cable to the `OUT2` CLAMP (GND)
+* Wire each *YELLOW* wire to the `Gxx` input PIN (ESP32)
 
 ## Siren
 
+Siren operates in a 12V, lots of amps. It's very noisy, and you only do two things: power it up, or power it down.
+I put a relay between the microcontroller logic and the siren, So I can do some control without frying the microcontroller. I see that 12V works properly (and does lot of noise). With my configuration, only one pin (GP15) is
+required to sound the siren bell. 
+
+<img src="doc/siren.png">
+
+`Relay_IN` pin layout (interfacing the microcontroller)
+
+| PIN       |WIRED_TO   | COLOR  | DESCRIPTION                          |
+|-----------|-----------|--------|-------------------------------------:|
+|R$D0       | G15 pin   | Yellow | The output pin to activate the relay |
+|R$VCC      | 5V        | Red    | 5V                                   |
+|R$GND      | GND_03    | Black  | GND                                  |
+
+`Relay_OUT` pin layout (interfacing the siren)
+
+| PIN       |WIRED_TO          | COLOR  | DESCRIPTION                       |
+|-----------|------------------|--------|----------------------------------:|
+|NO         | red wire (siren) | Red    | Connect to the siren bell (NC)    |
+|COM        | red wire (12V)   | Red    | 12V VCC (to power the siren)      |
+|NC         | None             | None   | Not used                          |
+
+The siren's *white* wire is connected directly to `GND_12V` (black wire)
+
+Easily configured in the `config.json` file:
+
+```json
+  "siren": {  "pin": 15, "duration": 60000}, 
+```
+
 ## Power Supply
+
+
 
 
 
