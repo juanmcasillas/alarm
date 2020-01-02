@@ -1,37 +1,25 @@
 # Alarm
-A simple, WiFi enabled, DSC 5010 power832 alarm interface with ESP32
+A simple, WiFi enabled alarm with RFID and WWW interface. If you don't want WWW support, it works with small
+arduinos (e.g. NANO). If not, ESP32 is recommended. Also will work with ESP8266.
 
 This project builds an alarm controller reusing the existing components:
 
-* three motion detectos
-* siren
+* three motion detectors (pir and microwave)
+* siren bell
 
 This project provides:
 
 1. The software to control the feeder.
 2. The electronics schemas to connect all the parts.
 
-***TODO*** I have to rewrite all the documentation.
-
 
 # Table Of Contents
 
 1. [Project Features](#project-features)
-2. [3D Printing and Assembly](#3d-printing-and-assembly)
-    1. [Prototype](#prototype)
-    2. [CatFeeder](#catfeeder)
-        1. [Part list to print](#part-list-to-print)
-        2. [Printing times](#printing-times)
-        3. [Assembly](#assembly)
-            1. [Mount the pins in the inner case](#mount-the-pins-in-the-inner-case)
-            2. [Screw the base to the inner case](#screw-the-base-to-the-inner-case)
-            3. [Mount the axis motor and support](#mount-the-axis-motor-and-support)
-            4. [Iron the wires to battery holder](#iron-the-wires-to-battery-holder)
-            5. [Build the 90 degree wires](#build-the-90-degree-wires)
-            6. [Wiring diagram](#wiring-diagram)
-            7. [Mount the UNL2003](#mount-the-unl2003)
-            8. [Mount the ESP8266](#mount-the-esp8266)
-            9. [Mount the cap](#mount-the-cap)
+2. [Wiring Diagram](#wiring-diagram)
+    1. [PIR Detector](#pir-detector)
+    2. [Siren](#siren)
+    3. [Power supply](#power-supply)
 
 3. [How to install the Software](#how-to-install-the-software)
     1. [Arduino Board Setup](#arduino-board-setup)
@@ -49,36 +37,40 @@ This project provides:
 
 # Project Features
 
-1. Fully printable container, so you can download the project, start your printer, and print all the parts. The STL are 
-ready to print, so the orientation and tolerances are configured and tested.
-2. Managed using web interface. Catfeeder provides a WWW server that provides the following capabilities:
-    * Network configuration. DCHP / Static / AP operation
-    * Calibration
+1. Provides support for existing PIR & MicroWave motion detectors
+2. Provides support for existing alarm siren
+3. Adds WiFi support (as AP or STA)
+4. Support full config using a simple JSON File
+5. Support Enable/Disable specific zones (covered by motion detectors)
+6. Add RFID support for enable/disable the alarm
+7. Add a WWW interface for basic control (with auth) and log file recording.
+8. Managed using web interface. Alarm provides a WWW server that provides the following capabilities:
     * NTP client, so we manage the current time.
+    * If started as AP, you can set the time using the client (web navigator) stamp instead, automatically.
     * Configuration persistence (SPIFFS).
-    * Detailed log of Catfeeder's operation, so you can check what happen.
+    * Detailed log of Alarms's operation, so you can check what happen.
     * Modern HTML / JS interface, AJAX based operation.
-    * Easy, flexible schedule configuration for feeding your pets. No limits on this (only the number of slots).
-    * Capable of communicate using a Telegram Bot (Experimental).
-3. Cheap to build. Based on standard hardware components:
-    * ESP8266 Core on an NodeMCU LoLin v3 development board (about 7€)
-    * Stepper motor: 28BYJ48 (5 motors about 6€)
-    * Stepper motor driver: ULN2003 (5 drivers mounted on development board about 6€)
-    * Printed on PLA
-    * Some wiring cable (8 wires)
-    * 4 allen screws (13mm)
-    * 2 allen screws (6mm)
-    * Powered on 4xAA batteries (6V)
-    * 1 4xAA battery holder (5 holders about 4€)
-    * 4 small screws to support the boards to pins
-    * 4 pins to build the power connector
-4. Easy of operation:
-    * Cap is removable so you can clean / add the meal easily.
-    * The shape is designed to be "safe" for your cats. They can't bump it.
-    * Schedule the meals using the phone or your computer easily.
-    * With 1 meal/day, you can serve a full week.
-    * Very quiet operation, due the stepper motor.
-    * Can be calibrated easily, using the web interface.
+9. Cheap to build. Based on standard hardware components:
+    * ESP32 Core on an NodeMCU LoLin v3 development board (about 7€).
+    * Simple 5v relay board (about 1€).
+    * 12V DC power supply (about 20€).
+    * 5V DC power supply (reused from a nokia mini-usb charger).
+    * Some wiring cable.
+    * Some clamps to join the existing cables.
+10. Easy of operation:
+    * Arm / Disarm the alarm using a RFID key or use the WWW interface.
+    * Select what zones you want to ring using the config file or the WWW interface.
+    * Integrate the alarm with your WiFi network, or use their own standalone AP.
+
+# Wiring Diagram
+
+## Pir Detector
+
+## Siren
+
+## Power Supply
+
+
 
 # 3D Printing and Assembly
 
