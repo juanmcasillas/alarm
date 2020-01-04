@@ -22,8 +22,21 @@ This project provides:
     2. [Siren](#siren)
     3. [RFID RC522 Reader](#rfid-reader)
     4. [Power supply](#power-supply)
-
-3. [Additional Notes](#additional-notes)
+    5. [Old Alarm System](#old-alarm-system)
+3. [How to install the Software](#how-to-install-the-software)
+    1. [Arduino Board Setup](#arduino-board-setup)
+    2. [Configuration options](#configuration-options)
+    3. [Configuration File](#configuration-file)
+        3.1 [Getting the RFID keys](#getting-the-rfid-keys)
+    4. [Download the components to the Board](#download-the-components-to-the-board)
+        1. [Check for good compilation](#check-for-good-compilation)
+        2. [Download the FileSystem to the board](#download-the-filesystem-to-the-board)
+        3. [Download the Alarm application to the board](#download-the-alarm-application-to-the-board)
+4. [Web Interface](#web-interface)
+    1. [Check Status](#check-status)
+    2. [Config Zones](#config-zones)
+    3. [Change configuration](#change-configuration)
+    4. [Alarm Log](#alarm-log)
 
 # Project Features
 
@@ -54,7 +67,9 @@ This project provides:
 
 # Wiring Diagram
 
-<img src="doc/wiring.png">
+This is the general main wiring diagram. **Note the ESP32 pin out (Az-Delivery, NodeMCU ESP-32)**
+
+<img src="doc/wiring.png"></img>
 
 ## Pir Detector
 
@@ -86,7 +101,7 @@ pins:
 | 2         | G16    |
 | 3         | G17    |
 
-Easily configured in the `config.json` file:
+Easily configured in the `Software/data/config.json` file:
 
 ```json
  "zones": [ 
@@ -142,7 +157,7 @@ required to sound the siren bell.
 
 The siren's *white* wire is connected directly to `GND_12V` (black wire)
 
-Easily configured in the `config.json` file:
+Easily configured in the `Software/data/config.json` file:
 
 ```json
   "siren": {  "pin": 15, "duration": 60000}, 
@@ -155,9 +170,508 @@ Easily configured in the `config.json` file:
 
 ## Power Supply
 
-
 ## Old Alarm System
 
 DSC power832 5010
 
 <img src="doc/alarm_old.jpg"></img>
+
+
+# How to install the Software
+
+
+Alarm uses [ESPAsyncWebServer](https://github.com/me-no-dev/ESPAsyncWebServer) as webserver implementation. Keep in mind that you can't use `delay()` function becouse it breaks the "async". You need the following libraries installed in your Arduino `libraries` folder.
+
+    * [ArduinoJson-6.x](https://github.com/bblanchon/ArduinoJson) (the 6.x branch)
+    * [ESPAsyncTCP](https://github.com/me-no-dev/ESPAsyncTCP)
+    * [ESPAsyncWebServer](https://github.com/me-no-dev/ESPAsyncWebServer)
+    * [NtpClient](https://github.com/arduino-libraries/NTPClient)
+    * [Time](https://github.com/PaulStoffregen/Time)
+    * [Mifare522 MFRC522](https://github.com/miguelbalboa/rfid)
+
+
+Then, get the [Alarm Repo](https://github.com/juanmcasillas/alarm) and compile it using the Arduino IDE.
+
+## Arduino Board Setup
+
+I use a *Az-Delivery, NodeMCU ESP-32* board. There are many different development boards using ESP-32, you should use whatever implementation you want, but you have to adapt the pinout and how to configure the board for the Arduino IDE in order to compile and download the application.
+
+<img src="doc/esp32.jpg"></img>
+
+You need some things in Arduino IDE in order to work:
+
+* First install the serial driver, if not installed before, for your platform [CP210x Driver](https://www.silabs.com/products/development-tools/software/usb-to-uart-bridge-vcp-drivers)
+Then add ESP8266 aditional library:
+* Go to `Preferences`, add in `Additional Board Manager URLs` the following URL: [https://dl.espressif.com/dl/package_esp32_index.json](https://dl.espressif.com/dl/package_esp32_index.json)
+* Restart The Arduino IDE.
+* Go to `Tools->Board->Board Manager` and search `ESP32 by Expressif Systems` library and install it (I use version `1.0.2`)
+* Install the ESP32FS Flash filesystem tools form Arduino. Uncompress [package](https://github.com/me-no-dev/arduino-esp32fs-plugin/releases/download/1.0/ESP32FS-1.0.zip) inside `C:\Software\Arduino\tools`
+* Install Exception Decoder ESP. Not really needed to install the software, but can help you to troubleshoot some things if fail. Uncompress [package](https://github.com/me-no-dev/EspExceptionDecoder/releases/download/1.1.0/EspExceptionDecoder-1.1.0.zip) inside `C:\Software\Arduino\tools`
+* Restart the Arduino IDE.
+
+Now, You have to configure the Board options:
+
+* Board: `NodeMCU 32-S`
+* Upload Speed: `921600` (If you can't connect at this speed, check the cable or select a lower speed)
+* CPU Freq: `80 MHz`
+* Flash Size: `4M (2M SPIFFS)`. This is importart. If you don't do select that, you can't flash the FileSystem.
+* Debug port: `Disabled`
+* Debug Level: `None`
+* IWIP Variant: `v2 Lower Memory`
+* VTables: `Flash`
+* Exceptions: `Disabled`
+* Erase Flash: `Only Sketch`
+* Port: Your USB port.
+* Programmer: `AVRISP mkII`
+
+Try to upload any arduino example to check the toolchain.
+
+## Configuration options
+
+Alarm is configured in the `/Software/data/config.json` file. But you have to change definitions, if you change the pinout (e.g. the RC522 wires, or whatever). Let's see:
+
+`Software/alarm/alarm.ino`:
+
+```c++
+#define SERIAL_BAUD_RATE 115200             // Serial port debug max speed
+#define CONFIG_FILE "/config.json"          // where the config file is stored in the SPIFFS partition
+#define CALLBACK_PREFIX "/alarm"            // prefix for webservices callback
+
+```
+
+`Software/alarm/config.h`
+
+Main configuration file. You should only change the `BEEP*` configuration files. `MAX_TIME_DRIFT` is used when setting the timestamp from the browser. Let me explain this. When the ESP32 is started as AP, there's no internal RTC inside, so the timestamp starts in the EPOCH. (1970). When the browser connects to the web server and download the `index.html` file, some javascript is executed, and the local timestamp is passed when asking for the status ajax resource. The server checks the `MAX_TIME_DRIFT` and if the result is greater, the ESP timestamp is updated, so it reflects the current date (UTC for now, sorry)
+
+```c++
+#define MAX_ZONES 5     // maximum monitored zones (check pins availability)
+#define MAX_KEYS  5     // maximum RFID valid keys numbers
+#define KEY_SIZE  4     // RFID key size (4 bytes)
+#define MAX_TIME_DRIFT 3600  // max time drift in seconds when trying to setting the time as AP (no NTP, no RTC)
+#define BEEP_DURATION 50     // ms duration of the beep (alarm on)
+#define BEEP_WAIT 1000       // ms wait before beeps
+```
+
+The class `ConfigClass` store de default values that can be read for the `Software/data/config.json`. The initial values are *hardcored* so if you want to change anything this is your side. Note that all this default values are rewritten with the data read from the `Software/data/config.json`.
+
+```c++
+class ConfigClass {
+    public:
+        bool ap_mode = false; // false, station (default)
+        bool dhcp = false; 
+        String wifi_ssid = "XXXX";
+        String wifi_passwd = "YYYY";
+        String ap_name = "alarm_AP";
+        String ap_passwd = "alarm_AP";
+        String http_user = "admin";
+        String http_passwd = "admin";
+        int retries = 5;
+        int retry_delay = 5000; // 5 seconds
+        int http_port = 80;
+        IPAddress ip = IPAddress(192,168,5,100);
+        IPAddress gateway = IPAddress(192,168,5,1);
+        IPAddress network = IPAddress(255,255,255,0);
+        IPAddress dns = IPAddress(8,8,8,8);
+        String ntp_server = "es.pool.ntp.org";
+        int ntp_period = 15;
+        int ntp_interval = 63;
+        int ntp_timezone = 10; // madrid/spain
+        bool ntp_daylight = true;
+        float scheduled_interval = 1.0;
+        String log_file = "/logfile.log";
+
+        //
+        // alarm configuration
+        //
+
+        SirenClass siren;
+        ZoneClass zones[MAX_ZONES];
+        byte keys[MAX_KEYS][KEY_SIZE] = { 
+            { 0, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+        };
+
+        String passwd = "1234";
+        unsigned long armed_delay = 1000; // 1 second
+        unsigned long armed_delay_time_left = 0;
+
+        bool LoadConfig();
+        bool SaveConfig();
+        void begin(fs::FS *fs, String config_file);
+
+        // non persistent config
+        ALARM_STATUS STATUS = ALARM_STATUS::DISARMED; 
+        bool armed = false;
+        String last_event = "-";
+        bool wifi_sta = true; // false if ESP32 started as AP
+};
+```
+
+`Software/alarm/rfid.h`:
+
+The pinout for the `SPI` pinout. Note the different development boards require different `SPI` pins. 
+
+```c++
+#define RST_PIN  22      //RST     - required for mfrc522 config
+#define SDA_PIN  21      //SDA(SS) - required for mfrc522 config
+
+#define SCK_PIN  18      //SCK  - harcoded in lib, not use them
+#define MOSI_PIN 23      //MOSI - harcoded in lib, not use them
+#define MISO_PIN 19      //MISO - harcoded in lib, not use them
+```
+
+## Configuration File
+
+All the major options are set in the `Sofware/data/config.json` file, stored on the SPIFFS partition. I recommend
+clone the repo, edit the file and then upload the partition (see below)
+
+You should change:
+
+* `wifi_ssid, wifi_ssid`: the STA (client) information for your wifi network.
+* `ap_passwd`: the access point password where started in AP mode.
+* `http_user, http_passwd`: the data to use the *edit spiffs* built in editor, to upload files (e.g. `config.json`)
+* `ip, gateway, network`: to reflect your network settings
+* `keys`: the RFID key values that allow valid arming (see below). Stored in *decimal*
+* `password`: the password used to arm/disarm the alarm from the web interface.
+* `armed_delay`: the time between the alarm is disarmed and become armed (to allow you to exit).
+
+```json
+{
+    "ap_mode": false,
+    "dhcp":false,
+    "wifi_ssid":"XXXXX",
+    "wifi_passwd":"YYYY",
+    "ap_name":"Alarm_AP",
+    "ap_passwd":"Alarm_AP",
+    "http_user":"admin",
+    "http_passwd":"admin",
+    "retries": 5,
+    "retry_delay": 1000,
+    "http_port": 80,
+    "ip":[192,168,1,253],
+    "gateway":[192,168,1,1],
+    "network":[255,255,255,0],
+    "dns":[8,8,8,8],
+    "ntp_server":"es.pool.ntp.org",
+    "ntp_period":15,
+    "ntp_timezone":10,
+    "ntp_daylight":true,
+    "scheduled_interval": 0.5,
+    "log_file": "/alarm.log",
+
+    "siren": {  "pin": 15, "duration": 60000},     
+    "zones": [ 
+          { "pin": 14, "name": "main door", "enabled": true }, 
+          { "pin": 16, "name": "hall",      "enabled": true }, 
+          { "pin": 17, "name": "garage",    "enabled": true }
+      ],
+    "keys": [      
+      { "key": [1,2,3,4] },
+      { "key": [5,6,7,8]  }
+      ],
+    "passwd": "6666",
+    "armed_delay": 20000
+}
+```
+
+### Getting the RFID keys
+
+You have to get the valid key id in order to store them in the configuration file you the key is being recognized by the alarm as valid and allow you to arm/disarm the system. To do that, first of all upload `dev/rfid/rfid.ino` to the board, and check the serial monitor. When you pass the key near the reader, a key will be printed on the log:
+
+```
+Card UID: 123 223 231 12
+```
+
+Get these numbers, and save in the `Sofware/data/config.json` file:
+
+```json
+    "keys": [      
+      { "key": [123,223,231,12] }
+      ],
+```
+
+Yo can add up to `MAX_KEYS` keys (see `Software/config.h`). For example, adding another one:
+
+```json
+    "keys": [      
+      { "key": [123,223,231,12] },
+      { "key": [55 ,12 ,128,43] }
+      ],
+```
+
+
+## Download the components to the Board
+
+### Check for good compilation
+
+ First of all, open `alarm.ino` file in *Arduino IDE* and issue a `Verify` to check that everything compiles (libraries, and so on). When you have a valid compilation, then you should have a log output like this:
+
+ ```
+Linking everything together...
+/Users/assman/Library/Arduino15/packages/esp32/tools/xtensa-esp32-elf-gcc/1.22.0-80-g6c4433a-5.2.0/bin/xtensa-esp32-elf-gcc -nostdlib -L/Users/assman/Library/Arduino15/packages/esp32/hardware/esp32/1.0.2/tools/sdk/lib -L/Users/assman/Library/Arduino15/packages/esp32/hardware/esp32/1.0.2/tools/sdk/ld -T esp32_out.ld -T esp32.common.ld -T esp32.rom.ld -T esp32.peripherals.ld -T esp32.rom.spiram_incompatible_fns.ld -u ld_include_panic_highint_hdl -u call_user_start_cpu0 -Wl,--gc-sections -Wl,-static -Wl,--undefined=uxTopUsedPriority -u __cxa_guard_dummy -u __cxx_fatal_exception -Wl,--start-group /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/sketch/alarm.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/sketch/alarm.ino.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/sketch/config.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/sketch/helper.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/sketch/logger.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/sketch/rfid.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/sketch/webserver.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/FS/FS.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/FS/vfs_api.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/SPIFFS/SPIFFS.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/ArduinoOTA/ArduinoOTA.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/WiFi/ETH.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/WiFi/WiFi.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/WiFi/WiFiAP.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/WiFi/WiFiClient.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/WiFi/WiFiGeneric.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/WiFi/WiFiMulti.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/WiFi/WiFiSTA.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/WiFi/WiFiScan.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/WiFi/WiFiServer.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/WiFi/WiFiUdp.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/Update/Updater.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/ESPmDNS/ESPmDNS.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/AsyncTCP/AsyncTCP.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/ESPAsyncWebServer/AsyncEventSource.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/ESPAsyncWebServer/AsyncWebSocket.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/ESPAsyncWebServer/SPIFFSEditor.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/ESPAsyncWebServer/WebAuthentication.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/ESPAsyncWebServer/WebHandlers.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/ESPAsyncWebServer/WebRequest.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/ESPAsyncWebServer/WebResponses.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/ESPAsyncWebServer/WebServer.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/Ticker/Ticker.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/SPI/SPI.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/MFRC522/MFRC522.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/MFRC522/MFRC522Extended.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/Time/DateStrings.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/Time/Time.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/libraries/NtpClient/NTPClientLib.cpp.o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/core/core.a -lgcc -lopenssl -lbtdm_app -lfatfs -lwps -lcoexist -lwear_levelling -lesp_http_client -lprotobuf-c -lhal -lnewlib -ldriver -lbootloader_support -lpp -lfreemodbus -lmesh -lsmartconfig -ljsmn -lwpa -lethernet -lphy -lfrmn -lapp_trace -lfr_coefficients -lconsole -lulp -lwpa_supplicant -lfreertos -lbt -lmicro-ecc -lesp32-camera -lcxx -lxtensa-debug-module -ltcp_transport -lmdns -lvfs -lmtmn -lesp_ringbuf -lsoc -lcore -lfb_gfx -lsdmmc -llibsodium -lcoap -ltcpip_adapter -lprotocomm -lesp_event -limage_util -lc_nano -lesp-tls -lasio -lrtc -lspi_flash -lwpa2 -lwifi_provisioning -lesp32 -lface_recognition -lapp_update -lnghttp -lspiffs -lface_detection -lespnow -lnvs_flash -lesp_adc_cal -llog -ldl_lib -lsmartconfig_ack -lexpat -lfd_coefficients -lm -lmqtt -lc -lheap -lmbedtls -llwip -lnet80211 -lesp_http_server -lpthread -ljson -lesp_https_ota -lstdc++ -Wl,--end-group -Wl,-EL -o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/alarm.ino.elf
+python /Users/assman/Library/Arduino15/packages/esp32/hardware/esp32/1.0.2/tools/gen_esp32part.py -q /Users/assman/Library/Arduino15/packages/esp32/hardware/esp32/1.0.2/tools/partitions/default.csv /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/alarm.ino.partitions.bin
+/Users/assman/Library/Arduino15/packages/esp32/tools/esptool_py/2.6.1/esptool --chip esp32 elf2image --flash_mode dio --flash_freq 80m --flash_size 4MB -o /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/alarm.ino.bin /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/alarm.ino.elf
+esptool.py v2.6
+Multiple libraries were found for "WiFi.h"
+ Used: /Users/assman/Library/Arduino15/packages/esp32/hardware/esp32/1.0.2/libraries/WiFi
+ Not used: /Applications/Arduino.app/Contents/Java/libraries/WiFi
+Multiple libraries were found for "AsyncTCP.h"
+ Used: /Archive/Src/Arduino/libraries/AsyncTCP
+Multiple libraries were found for "Ticker.h"
+ Used: /Users/assman/Library/Arduino15/packages/esp32/hardware/esp32/1.0.2/libraries/Ticker
+Multiple libraries were found for "SPIFFS.h"
+ Used: /Users/assman/Library/Arduino15/packages/esp32/hardware/esp32/1.0.2/libraries/SPIFFS
+Multiple libraries were found for "ArduinoOTA.h"
+ Used: /Users/assman/Library/Arduino15/packages/esp32/hardware/esp32/1.0.2/libraries/ArduinoOTA
+Multiple libraries were found for "ESPAsyncWebServer.h"
+ Used: /Archive/Src/Arduino/libraries/ESPAsyncWebServer
+ Not used: /Archive/Src/Arduino/libraries/ESPAsyncWebServer_old
+Multiple libraries were found for "SPI.h"
+ Used: /Users/assman/Library/Arduino15/packages/esp32/hardware/esp32/1.0.2/libraries/SPI
+Multiple libraries were found for "Update.h"
+ Used: /Users/assman/Library/Arduino15/packages/esp32/hardware/esp32/1.0.2/libraries/Update
+Multiple libraries were found for "ESPmDNS.h"
+ Used: /Users/assman/Library/Arduino15/packages/esp32/hardware/esp32/1.0.2/libraries/ESPmDNS
+Multiple libraries were found for "FS.h"
+ Used: /Users/assman/Library/Arduino15/packages/esp32/hardware/esp32/1.0.2/libraries/FS
+Multiple libraries were found for "TimeLib.h"
+ Used: /Archive/Src/Arduino/libraries/Time
+Multiple libraries were found for "NtpClientLib.h"
+ Used: /Archive/Src/Arduino/libraries/NtpClient
+Multiple libraries were found for "ArduinoJson.h"
+ Used: /Archive/Src/Arduino/libraries/ArduinoJson
+Multiple libraries were found for "MFRC522.h"
+ Used: /Archive/Src/Arduino/libraries/MFRC522
+ Not used: /Archive/Src/Arduino/libraries/rfid-master
+Using library FS at version 1.0 in folder: /Users/assman/Library/Arduino15/packages/esp32/hardware/esp32/1.0.2/libraries/FS 
+Using library SPIFFS at version 1.0 in folder: /Users/assman/Library/Arduino15/packages/esp32/hardware/esp32/1.0.2/libraries/SPIFFS 
+Using library ArduinoJson at version 6.11.3 in folder: /Archive/Src/Arduino/libraries/ArduinoJson 
+Using library ArduinoOTA at version 1.0 in folder: /Users/assman/Library/Arduino15/packages/esp32/hardware/esp32/1.0.2/libraries/ArduinoOTA 
+Using library WiFi at version 1.0 in folder: /Users/assman/Library/Arduino15/packages/esp32/hardware/esp32/1.0.2/libraries/WiFi 
+Using library Update at version 1.0 in folder: /Users/assman/Library/Arduino15/packages/esp32/hardware/esp32/1.0.2/libraries/Update 
+Using library ESPmDNS at version 1.0 in folder: /Users/assman/Library/Arduino15/packages/esp32/hardware/esp32/1.0.2/libraries/ESPmDNS 
+Using library AsyncTCP at version 1.1.0 in folder: /Archive/Src/Arduino/libraries/AsyncTCP 
+Using library ESPAsyncWebServer at version 1.2.3 in folder: /Archive/Src/Arduino/libraries/ESPAsyncWebServer 
+Using library Ticker at version 1.1 in folder: /Users/assman/Library/Arduino15/packages/esp32/hardware/esp32/1.0.2/libraries/Ticker 
+Using library SPI at version 1.0 in folder: /Users/assman/Library/Arduino15/packages/esp32/hardware/esp32/1.0.2/libraries/SPI 
+Using library MFRC522 at version 1.4.5 in folder: /Archive/Src/Arduino/libraries/MFRC522 
+Using library Time at version 1.5 in folder: /Archive/Src/Arduino/libraries/Time 
+Using library NtpClient at version 2.5.1 in folder: /Archive/Src/Arduino/libraries/NtpClient 
+/Users/assman/Library/Arduino15/packages/esp32/tools/xtensa-esp32-elf-gcc/1.22.0-80-g6c4433a-5.2.0/bin/xtensa-esp32-elf-size -A /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/alarm.ino.elf
+Sketch uses 884082 bytes (67%) of program storage space. Maximum is 1310720 bytes.
+Global variables use 43592 bytes (13%) of dynamic memory, leaving 284088 bytes for local variables. Maximum is 327680 bytes.
+```
+
+If you have some error, it has been a missing library, probably.
+
+### Download the FileSystem to the board
+
+Go to `Tools->ESP32 Sketch Data Upload`. This put all the files in the flash partition of the board.
+
+```
+[SPIFFS] data   : /Archive/Src/alarm/Software/alarm/data
+[SPIFFS] start  : 2691072
+[SPIFFS] size   : 1468
+[SPIFFS] page   : 256
+[SPIFFS] block  : 4096
+/config.json
+/www/all.css
+/www/code.js
+/www/config.html
+/www/favicon.ico
+/www/get_status.json
+/www/index.html
+/www/jquery.js
+skipping .DS_Store
+skipping .DS_Store
+[SPIFFS] upload : /var/folders/cc/0xwh_8tn7xdf8834vtcvvlt00000gn/T/arduino_build_296729/alarm.spiffs.bin
+[SPIFFS] address: 2691072
+[SPIFFS] port   : /dev/cu.SLAB_USBtoUART
+[SPIFFS] speed  : 921600
+[SPIFFS] mode   : dio
+[SPIFFS] freq   : 80m
+
+esptool.py v2.6
+Serial port /dev/cu.SLAB_USBtoUART
+Connecting........__
+Chip is ESP32D0WDQ6 (revision 1)
+Features: WiFi, BT, Dual Core, 240MHz, VRef calibration in efuse, Coding Scheme None
+MAC: 3c:71:bf:6a:d5:70
+Uploading stub...
+Running stub...
+Stub running...
+Changing baud rate to 921600
+Changed.
+Configuring flash size...
+Auto-detected Flash size: 4MB
+Compressed 1503232 bytes to 49040...
+
+Writing at 0x00291000... (33 %)
+Writing at 0x00295000... (66 %)
+Writing at 0x00299000... (100 %)
+Wrote 1503232 bytes (49040 compressed) at 0x00291000 in 1.6 seconds (effective 7330.7 kbit/s)...
+Hash of data verified.
+
+Leaving...
+Hard resetting via RTS pin...
+```
+
+### Download the Alarm application to the board
+
+After that, you have all the files in the flash, and the last step to get the thing working is Download the Alarm sketch. Before this, If you want to  comment out the debug output, you should edit `Software/logger.h:12` and uncomment the following line:
+
+```
+// #define RELEASE  // Comment to enable debug output
+```
+
+I recommend you *leave* the log enabled, so you can check that everything starts, the mac address, etc. Ok, it's time to download the sketch. If you upload the sketch from Arduino IDE, you should see something like this in the output window:
+
+```
+esptool.py v2.6
+Serial port /dev/cu.SLAB_USBtoUART
+Connecting........___
+Chip is ESP32D0WDQ6 (revision 1)
+Features: WiFi, BT, Dual Core, 240MHz, VRef calibration in efuse, Coding Scheme None
+MAC: 3c:71:bf:6a:d5:70
+Uploading stub...
+Running stub...
+Stub running...
+Changing baud rate to 921600
+Changed.
+Configuring flash size...
+Auto-detected Flash size: 4MB
+Compressed 8192 bytes to 47...
+
+Writing at 0x0000e000... (100 %)
+Wrote 8192 bytes (47 compressed) at 0x0000e000 in 0.0 seconds (effective 5455.4 kbit/s)...
+Hash of data verified.
+Compressed 15328 bytes to 9994...
+
+Writing at 0x00001000... (100 %)
+Wrote 15328 bytes (9994 compressed) at 0x00001000 in 0.1 seconds (effective 979.0 kbit/s)...
+Hash of data verified.
+Compressed 884192 bytes to 501937...
+
+Writing at 0x00010000... (3 %)
+Writing at 0x00014000... (6 %)
+Writing at 0x00018000... (9 %)
+Writing at 0x0001c000... (12 %)
+Writing at 0x00020000... (16 %)
+Writing at 0x00024000... (19 %)
+Writing at 0x00028000... (22 %)
+Writing at 0x0002c000... (25 %)
+Writing at 0x00030000... (29 %)
+Writing at 0x00034000... (32 %)
+Writing at 0x00038000... (35 %)
+Writing at 0x0003c000... (38 %)
+Writing at 0x00040000... (41 %)
+Writing at 0x00044000... (45 %)
+Writing at 0x00048000... (48 %)
+Writing at 0x0004c000... (51 %)
+Writing at 0x00050000... (54 %)
+Writing at 0x00054000... (58 %)
+Writing at 0x00058000... (61 %)
+Writing at 0x0005c000... (64 %)
+Writing at 0x00060000... (67 %)
+Writing at 0x00064000... (70 %)
+Writing at 0x00068000... (74 %)
+Writing at 0x0006c000... (77 %)
+Writing at 0x00070000... (80 %)
+Writing at 0x00074000... (83 %)
+Writing at 0x00078000... (87 %)
+Writing at 0x0007c000... (90 %)
+Writing at 0x00080000... (93 %)
+Writing at 0x00084000... (96 %)
+Writing at 0x00088000... (100 %)
+Wrote 884192 bytes (501937 compressed) at 0x00010000 in 7.1 seconds (effective 998.9 kbit/s)...
+Hash of data verified.
+Compressed 3072 bytes to 144...
+
+Writing at 0x00008000... (100 %)
+Wrote 3072 bytes (144 compressed) at 0x00008000 in 0.0 seconds (effective 1855.1 kbit/s)...
+Hash of data verified.
+
+Leaving...
+Hard resetting via RTS pin...
+```
+
+Now, open the `Serial Monitor` window you will see the debug information and some useful stuff:
+ 
+```
+Started Serial Debug
+JSON file size: 938 bytes
+Config initialized.
+HW MAC_ADDR: 3C:71:BF:6A:D5:70
+Connecting as Wifi_STA, failed!
+Connecting as Wifi_STA, failed!
+Connecting as Wifi_STA, failed!
+Connecting as Wifi_STA, failed!
+Connecting as Wifi_STA, failed!
+Max Retires happen (5). Exiting
+Configured as AP. http://192.168.1.253/ to manage
+```
+
+The interesting line are:
+
+```
+HW MAC_ADDR: 3C:71:BF:6A:D5:70
+Configured as AP. http://192.168.1.253/ to manage
+```
+
+You have the mac address, if you need to add them to the Wifi MAC filter, and the configured IP for the AP (Access Point). If `Configured as AP. http://192.168.1.253/ to manage` you start the alarm as AP mode, or the WIFI credentials are invalid. Change the `Sofware/data/config.json` and upload again the SPIFFS partition. You can change the file using the SPIFFS editor, also.
+
+If you started as STA (client) you will see that in the Serial Output Monitor: 
+
+```
+Started Serial Debug
+JSON file size: 950 bytes
+Config initialized.
+HW MAC_ADDR: 3C:71:BF:6A:D5:70
+Configured as STA
+NTP Last Sync: 12:52:56 04/01/2020
+```
+
+# Web Interface
+
+Alarm provides a basic web interface to provide the following functionality:
+
+* arm / disarm the alarm.
+* enable / disable zones.
+* change the `config.json`.
+* check the log file.
+
+For the example, we are using `192.168.3.1` as alarm IP adress.
+
+## Check Status
+
+go to `http://192.168.3.1/` with your web browser:
+
+
+<img src="doc/www_index.jpg"></img>
+
+
+## Config Zones
+
+## Change Configuration
+
+## Alarm Log
+
+You can access the log file using the IP of alarm (e.g. `192.168.3.1`). Put this URL in your
+browser `http://192.168.3.1/alarm.log`
+
+```
+[00/00/1970 00:00:00] [INFO] Zone: main door is wired to pin 14
+[00/00/1970 00:00:00] [INFO] Zone: hall is wired to pin 16
+[00/00/1970 00:00:00] [INFO] Zone: garage is wired to pin 17
+[00/00/1970 00:00:00] [INFO] Alarm starting
+[01/01/1970 00:00:01] [INFO] Zone: main door wired to pin 14 FIRED
+[01/01/1970 00:00:01] [INFO] Zone: hall wired to pin 16 FIRED
+[01/01/1970 00:00:01] [INFO] Zone: garage wired to pin 17 FIRED
+[01/01/1970 00:00:01] [INFO] Zone: main door wired to pin 14 FIRED
+[01/01/1970 00:00:01] [INFO] Zone: hall wired to pin 16 FIRED
+[01/01/1970 00:00:01] [INFO] Zone: garage wired to pin 17 FIRED
+[04/01/2020 12:52:56] [INFO] Alarm is Running and Handling Requests!
+```

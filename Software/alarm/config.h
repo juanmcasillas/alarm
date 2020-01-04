@@ -13,9 +13,9 @@
 #define MAX_ZONES 5     // maximum monitored zones (check pins availability)
 #define MAX_KEYS  5     // maximum RFID valid keys numbers
 #define KEY_SIZE  4     // RFID key size (4 bytes)
-#define MAX_TIME_DRIFT  3600 // max time in seconds to avoid update the time from client in AP_MODE
-
 #define MAX_TIME_DRIFT 3600  // max time drift in seconds when trying to setting the time as AP (no NTP, no RTC)
+#define BEEP_DURATION 50     // ms duration of the beep (alarm on)
+#define BEEP_WAIT 1000       // ms wait before beeps
 
 class SirenClass {
     public:
@@ -28,9 +28,9 @@ class SirenClass {
 
         // beeping in ARMED_DELAY
         bool beep_wait_mode = false;            // sound or wait
-        unsigned long beep_left = 0;       // to store millis
-        unsigned long beep_duration = 50; // duration of the beep (alarm on)
-        unsigned long beep_wait = 1000;     // wait before beeps
+        unsigned long beep_left = 0;           // to store millis
+        unsigned long beep_duration = BEEP_DURATION; // duration of the beep (alarm on)
+        unsigned long beep_wait = BEEP_WAIT;     // wait before beeps
 };
 
 class ZoneClass {

@@ -16,9 +16,9 @@ AlarmClass ALARM;
 
 /// ARDUINO BLOCK /////////////////////////////////////////////////////////////
 
-#define SERIAL_BAUD_RATE 115200
-#define CONFIG_FILE "/config.json"
-#define CALLBACK_PREFIX "/alarm"
+#define SERIAL_BAUD_RATE 115200             // Serial port debug max speed
+#define CONFIG_FILE "/config.json"          // where the config file is stored in the SPIFFS partition
+#define CALLBACK_PREFIX "/alarm"            // prefix for webservices callback
 
 void setup() {
 
