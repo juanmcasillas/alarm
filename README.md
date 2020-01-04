@@ -32,7 +32,8 @@ This project provides:
         1. [Check for good compilation](#check-for-good-compilation)
         2. [Download the FileSystem to the board](#download-the-filesystem-to-the-board)
         3. [Download the Alarm application to the board](#download-the-alarm-application-to-the-board)
-4. [Web Interface](#web-interface)
+4. [How it works](#how-it-works)
+5. [Web Interface](#web-interface)
     1. [Check Status](#check-status)
     2. [Config Zones](#config-zones)
     3. [Change configuration](#change-configuration)
@@ -634,6 +635,18 @@ Configured as STA
 NTP Last Sync: 12:52:56 04/01/2020
 ```
 
+# How it Works
+
+Alarm works in a very easy way, implemented as a state machine. When you boot the alarm, it becomes `DISARMED`. If you use the RFID NFC key (represented by the `k` in the following graph) or use the *ARM* option in the web interface (represented by the `w` in the diagram), the alarms goes to state `ARMED_DELAY`.
+
+The alarm stays in `ALARM_DELAY` while the `armed_delay` time doesn't expired, beeping to remember you that you should go outside the house. When this time passed, the alarm goes to state `ARMED`.
+
+In `ARMED` state, if any movement detection is found in any zone enabled, the alarm will be fired for a given time.
+
+You can cancel the `ARMED_DELAY`and `ARMED` state using the RFID NFC key or the Web Interface in any moment (e.g. DISARM the alarm shut downs the siren bell).
+
+<img src="doc/state_machine.png"></img>
+
 # Web Interface
 
 Alarm provides a basic web interface to provide the following functionality:
@@ -649,13 +662,62 @@ For the example, we are using `192.168.3.1` as alarm IP adress.
 
 go to `http://192.168.3.1/` with your web browser:
 
+<img src="doc/web_index.jpg"></img>
 
-<img src="doc/www_index.jpg"></img>
-
+* the first row shows the UTC time.
+* The second row shows the ALARM state. DISARMED (red) means NO SOUND.
+* The last movement detection trigered, and its zone.
+* Zones are the different detectors. If they are enabled, they will light green (no movement detection found) or red (detection found). If the zone is not enabled, it shows gray. Disabled zones doesn't fire the alarm.
 
 ## Config Zones
 
+<img src="doc/web_config.jpg"></img>
+
+In order to do any changes here, you need to type the password in the keypad. (4 chars len max). So first, type the password in the keypad (auth becomes filled with asterisks). Then configure the required elements, and press **SAVE**.
+remember press **STATUS** to go back to the stus page. Mute Siren is to avoid sound the alarm (bell) (muted siren).
+
+If you **ARM** the alarm, a BEEP starts sounds. you should go out the house during the ALARM_DELAY state. If motion detection is found, the alarm is started for a given time. These parameters are configured on:
+
+`Sofware/config.h`:
+First, the duration of the beep, second the time muted between beeps
+
+```c++
+#define BEEP_DURATION 50     // ms duration of the beep (alarm on)
+#define BEEP_WAIT 1000       // ms wait before beeps
+```
+
+`Software/data/config.json`:
+How many time the alarm sounds if movement detection is found, and the armed_delay time. All the time values are in milliseconds, so the following values are 60 seconds, and 20 seconds.
+```json
+ "siren": {  "pin": 15, "duration": 60000},  
+  "armed_delay": 20000
+ ```
+
 ## Change Configuration
+
+Yo can change the `config.json` configuration file by uploading it usign the ISPFSS builtin editor. **Handle this with care, because you can break some files, and you need to reflash the ISPFSS partition**. You should use the `http_user` and `http_passwd` information supplied in the `config.json` file to login.
+
+`Software/data/config.json`:
+```json
+    "http_user":"admin",
+    "http_passwd":"admin",
+ ```
+
+Point the browser to: `http://192.168.3.1/edit`:
+
+<img src="doc/web_edit_admin.jpg"></img>
+
+Now you are in. At the left you can see all the files stored in the SPIFFS partition. You only need:
+
+* `alarm.log`
+* `config.json`
+
+To download them, make right-click with the mouse over they name (in the left column). Just download the file,
+change it with your favorite editor, and upload it again using the header buttons.
+
+<img src="doc/web_edit.jpg"></img>
+
+You need to reboot the alarm (cycle the power, or press the `RST` button) in order to reload the configuration.
 
 ## Alarm Log
 
