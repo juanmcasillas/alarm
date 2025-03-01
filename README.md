@@ -1,4 +1,12 @@
 # Alarm
+
+**IMPORTANT UPDATE 1/03/2025**
+
+I have integrated the system into [ESPHome](https://esphome.io/) to allow integration of the device inside the
+[Home Assistant](https://www.home-assistant.io/) platform. Is a One-to-One dropin, mantaining all the wiring, 
+devices and functionality, but now is managed using HomeAssistant and it's automations (e.g. trigger the alarm)
+on camera detection, and son on.
+
 A simple, WiFi enabled alarm with RFID and WWW interface. If you don't want WWW support, it works with small
 arduinos (e.g. NANO). If not, ESP32 is recommended. Also will work with ESP8266.
 
@@ -16,28 +24,171 @@ This project provides:
 
 # Table Of Contents
 
-1. [Project Features](#project-features)
-2. [Wiring Diagram](#wiring-diagram)
-    1. [PIR Detector](#pir-detector)
-    2. [Siren](#siren)
-    3. [RFID RC522 Reader](#rfid-reader)
-    4. [Power supply](#power-supply)
-    5. [Old Alarm System](#old-alarm-system)
-3. [How to install the Software](#how-to-install-the-software)
-    1. [Arduino Board Setup](#arduino-board-setup)
-    2. [Configuration options](#configuration-options)
-    3. [Configuration File](#configuration-file)
-        3.1 [Getting the RFID keys](#getting-the-rfid-keys)
-    4. [Download the components to the Board](#download-the-components-to-the-board)
-        1. [Check for good compilation](#check-for-good-compilation)
-        2. [Download the FileSystem to the board](#download-the-filesystem-to-the-board)
-        3. [Download the Alarm application to the board](#download-the-alarm-application-to-the-board)
-4. [How it works](#how-it-works)
-5. [Web Interface](#web-interface)
-    1. [Check Status](#check-status)
-    2. [Config Zones](#config-zones)
-    3. [Change configuration](#change-configuration)
-    4. [Alarm Log](#alarm-log)
+- [Alarm](#alarm)
+- [Table Of Contents](#table-of-contents)
+- [ESPHome](#esphome)
+  - [A note about old Mac (high sierra) install](#a-note-about-old-mac-high-sierra-install)
+  - [Installing the Alarm YAML](#installing-the-alarm-yaml)
+- [Project Features](#project-features)
+- [Wiring Diagram](#wiring-diagram)
+  - [Pir Detector](#pir-detector)
+  - [Siren](#siren)
+  - [RFID Reader](#rfid-reader)
+  - [Power Supply](#power-supply)
+  - [Old Alarm System](#old-alarm-system)
+- [How to install the Software](#how-to-install-the-software)
+  - [Arduino Board Setup](#arduino-board-setup)
+  - [Configuration options](#configuration-options)
+  - [Configuration File](#configuration-file)
+    - [Getting the RFID keys](#getting-the-rfid-keys)
+  - [Download the components to the Board](#download-the-components-to-the-board)
+    - [Check for good compilation](#check-for-good-compilation)
+    - [Download the FileSystem to the board](#download-the-filesystem-to-the-board)
+    - [Download the Alarm application to the board](#download-the-alarm-application-to-the-board)
+- [How it Works](#how-it-works)
+- [Web Interface](#web-interface)
+  - [Check Status](#check-status)
+  - [Config Zones](#config-zones)
+  - [Change Configuration](#change-configuration)
+  - [Alarm Log](#alarm-log)
+
+# ESPHome
+
+[ESPHome](https://esphome.io/) is a framework that allows the ESP32 family to be integrated on HomeAssisant integrations
+by means of simple YAML configuration files, and OTA updates. The first time is too tricky to flash, but after that, the
+system works flawless. The easiest way of install this is create a simple esphome project with the wizard, an flash it
+locally using the USB. See [This Guide](https://esphome.io/guides/installing_esphome) for manual configure the ESPHOME
+enviroment locally.
+
+```
+% pip3 install wheel
+% pip3 install esphome
+```
+
+Now, create a simple test and configure it with your WIFI settings (e.g. SSID, Passwd). It's advisable map the MAC
+address of the device on the DHCP server and make an address reservation for it (so the device has all the time the
+same IP) it's not needed because it uses mDNS, but for inventory porpouses it's advisable. see [This Guide](https://esphome.io/guides/getting_started_command_line) to create the sample YAML file.
+
+```
+% esphome wizard livingroom.yaml 
+```
+
+The first time you need to have phisically connected to the ESP32 by USB cable. So upload the script (and the firmware). Set the USB port as needed.
+
+```
+% esphome run livingroom.yaml --device=/dev/ttyUSB0
+```
+
+That's all. You have the ESPHOme installed. Then, if it's the first time, deploy de **dashboard** on your server, so you 
+can manage the ESPHOME devices remotely. `config` is the directory when you store all the ESPHOME configurations (a.k.a YAML files). The port for the dashboard is **`6052`**. Now let's deploy our ALARM script into the ESP32 Node
+
+```
+% pip install tornado esptool
+% esphome dashboard config
+```
+
+## A note about old Mac (high sierra) install
+
+On my old mac (high sierra) I have lot of problems with SSL certificates and python (obsolete certs). So I have to trick
+it in order to work. I have this here for documentation. I Use `python3.10` on mac (I can't install anything modern here)
+ESPHome is installed on `$HOME/Library/Python/3.10/bin/esphome --version`. To allow upgrading `platformio` using by 
+ESPHOME to build the images, I have to do the following:
+
+1. open visual estudio code with platform_io
+2. open a project
+3. run the > platformio cli from the toolbar palette
+4. update with `pio run -d /Archive/Src/nvr/esp32/esphome/.esphome/build/eh_test`
+5. done go again to esphome (command line in a shell, outside the VSCode)
+6. `$HOME/Library/Python/3.10/bin/esphome  run eh_test.yaml --device=/dev/cu.SLAB_USBtoUART`
+7. Now `platformio` is updated and can deploy the firmware by command line.
+
+## Installing the Alarm YAML
+
+Create a new project on ESPHOME dashboard called esp32_alarm.yaml the full code is here <a href="Software/esphome/esp32_alarm.yaml">esp32_alarm.yaml</a> First of all add the configuration block:
+
+```yaml
+esphome:
+  name: esp32_alarm
+
+esp32:
+  board: az-delivery-devkit-v4
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: ""
+
+ota:
+  - platform: esphome
+    password: ""
+
+wifi:
+  ssid: "WLAN_AP24"
+  password: "F1rulais66!!"
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Esp32 Alarm Fallback Hotspot"
+    password: "ewfGwxUXOEaJ"
+
+captive_portal:
+```
+
+The most important fields are `board` (use `ESP32/az-delivery-devkit-v4` in my case) and `wifi` fields. Set the `ssid` and
+`password` files right. Leave the `ota` `password` field empty. Now, configure the sensors. See below for wiring and operation:
+
+```yaml
+binary_sensor:
+
+  - platform: gpio
+    name: "pir_main_door"
+    device_class: motion
+    pin: 
+      number: GPIO14
+      mode:
+        pullup: true
+        input: true
+    filters:
+      - delayed_off: 100ms
+    
+  - platform: gpio
+    name: "pir_salon"
+    device_class: motion
+    pin: 
+      number: GPIO16
+      mode:
+        pullup: true
+        input: true
+    filters:
+      - delayed_off: 100ms
+
+  - platform: gpio
+    name: "pir_taller"
+    device_class: motion     
+    pin: 
+      number: GPIO17
+      mode:
+        pullup: true
+        input: true
+    filters:
+      - delayed_off: 100ms
+
+switch:
+  - platform: gpio
+    pin: GPIO15
+    inverted: false
+    name: "alarm_relay"
+```
+
+The `binary_sensor` sections maps the PIR detectors. Note the `pullup` and `delayed_off` fields. The `switch` section maps the alarm (siren) relay. As easy as this. Then go to the homeassistant instance, and you will find, under devices the new
+detected device, with all the sensors (pir sensors) and the relay (alarm_relay). Now is time to start doing automations.
+
+<img src="doc/esphome_ha.png">
+
 
 # Project Features
 

@@ -1,0 +1,81 @@
+#
+# esp32_alarm.yaml
+# The replacement drop in for alarm in ESPHOME
+# (c) 2025 Juan M. Casillas <juanm.casillas@gmail.com>
+# see https://github.com/juanmcasillas/alarm
+#
+
+esphome:
+  name: esp32_alarm
+
+esp32:
+  board: az-delivery-devkit-v4
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: ""
+
+ota:
+  - platform: esphome
+    password: ""
+
+wifi:
+  ssid: "WLAN_AP24"
+  password: "**THEAPPASSHERE**"
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Esp32 Alarm Fallback Hotspot"
+    password: "ewfGwxUXOEaJ"
+
+captive_portal:
+
+## configuration for the alarm
+## see https://github.com/juanmcasillas/alarm
+
+binary_sensor:
+
+  - platform: gpio
+    name: "pir_main_door"
+    device_class: motion
+    pin: 
+      number: GPIO14
+      mode:
+        pullup: true
+        input: true
+    filters:
+      - delayed_off: 100ms
+    
+  - platform: gpio
+    name: "pir_salon"
+    device_class: motion
+    pin: 
+      number: GPIO16
+      mode:
+        pullup: true
+        input: true
+    filters:
+      - delayed_off: 100ms
+
+  - platform: gpio
+    name: "pir_taller"
+    device_class: motion     
+    pin: 
+      number: GPIO17
+      mode:
+        pullup: true
+        input: true
+    filters:
+      - delayed_off: 100ms
+
+
+switch:
+  - platform: gpio
+    pin: GPIO15
+    inverted: false
+    name: "alarm_relay"
